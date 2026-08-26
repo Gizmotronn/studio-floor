@@ -404,7 +404,7 @@ export function useHive(config: HarnessConfig | null): void {
       const god: Agent = {
         id: GOD_ID,
         name: 'Michael',
-        character: 'studio01',
+        character: 'engineer',
         accent: 'lemon',
         description: 'god — runs the floor, triages requests, escalates only critical calls to you',
         project: 'hive',
