@@ -1,4 +1,4 @@
-// The Office cast — roster metadata + sprite frames.
+// Studio Floor starter roster metadata + sprite frames.
 //
 // Both the static portraits (cards / picker) and the in-scene walking sprites are
 // now fully custom-drawn from the same per-character recipes in portraitArt.ts:
@@ -10,9 +10,9 @@ import { Texture } from 'pixi.js';
 import { paintPortrait, sceneFrameBufs, SCENE_W, SCENE_H } from './portraitArt';
 
 export type OfficeCharacterName =
-  | 'michael' | 'jim' | 'pam' | 'dwight' | 'kevin' | 'angela'
-  | 'oscar' | 'stanley' | 'phyllis' | 'andy' | 'kelly' | 'ryan'
-  | 'toby' | 'creed' | 'meredith';
+  | 'studio01' | 'studio02' | 'studio03' | 'studio04' | 'studio05'
+  | 'studio06' | 'studio07' | 'studio08' | 'studio09' | 'studio10'
+  | 'studio11' | 'studio12' | 'studio13' | 'studio14' | 'studio15';
 
 export interface CastMember {
   name: OfficeCharacterName;
@@ -25,27 +25,27 @@ export interface CastMember {
 
 /** Selectable roster, in display order. */
 export const OFFICE_CAST: CastMember[] = [
-  { name: 'michael',  displayName: 'Michael',  shirt: '#5a6b8c', blurb: "World's best boss" },
-  { name: 'jim',      displayName: 'Jim',      shirt: '#6fa8dc', blurb: 'Salesman, prankster' },
-  { name: 'pam',      displayName: 'Pam',      shirt: '#9caf88', blurb: 'Receptionist, artist' },
-  { name: 'dwight',   displayName: 'Dwight',   shirt: '#b89b3e', blurb: 'Assistant (to the) RM' },
-  { name: 'kevin',    displayName: 'Kevin',    shirt: '#4a7ab5', blurb: 'Accounting' },
-  { name: 'angela',   displayName: 'Angela',   shirt: '#8a86a6', blurb: 'Head of accounting' },
-  { name: 'oscar',    displayName: 'Oscar',    shirt: '#7a4b6b', blurb: 'Accountant' },
-  { name: 'stanley',  displayName: 'Stanley',  shirt: '#8c5a4b', blurb: 'Sales, crossword' },
-  { name: 'phyllis',  displayName: 'Phyllis',  shirt: '#b08bbf', blurb: 'Sales' },
-  { name: 'andy',     displayName: 'Andy',     shirt: '#6fae6f', blurb: 'Cornell, a cappella' },
-  { name: 'kelly',    displayName: 'Kelly',    shirt: '#d16ba5', blurb: 'Customer service' },
-  { name: 'ryan',     displayName: 'Ryan',     shirt: '#3a3a44', blurb: 'The temp' },
-  { name: 'toby',     displayName: 'Toby',     shirt: '#9a8c5a', blurb: 'Human resources' },
-  { name: 'creed',    displayName: 'Creed',    shirt: '#6b7a4b', blurb: 'Quality assurance' },
-  { name: 'meredith', displayName: 'Meredith', shirt: '#b5544a', blurb: 'Supplier relations' },
+  { name: 'studio01', displayName: 'Orion', shirt: '#5a6b8c', blurb: 'Studio guide' },
+  { name: 'studio02', displayName: 'Marin', shirt: '#6fa8dc', blurb: 'Creative partner' },
+  { name: 'studio03', displayName: 'Quinn', shirt: '#9caf88', blurb: 'Thoughtful maker' },
+  { name: 'studio04', displayName: 'Rowan', shirt: '#b89b3e', blurb: 'Focused builder' },
+  { name: 'studio05', displayName: 'Avery', shirt: '#4a7ab5', blurb: 'Calm analyst' },
+  { name: 'studio06', displayName: 'Sage', shirt: '#8a86a6', blurb: 'Detail keeper' },
+  { name: 'studio07', displayName: 'Dara', shirt: '#7a4b6b', blurb: 'Careful researcher' },
+  { name: 'studio08', displayName: 'Kai', shirt: '#8c5a4b', blurb: 'Steady reviewer' },
+  { name: 'studio09', displayName: 'Mina', shirt: '#b08bbf', blurb: 'Warm collaborator' },
+  { name: 'studio10', displayName: 'Jules', shirt: '#6fae6f', blurb: 'Idea explorer' },
+  { name: 'studio11', displayName: 'Ember', shirt: '#d16ba5', blurb: 'Curious scout' },
+  { name: 'studio12', displayName: 'River', shirt: '#3a3a44', blurb: 'Practical maker' },
+  { name: 'studio13', displayName: 'Sol', shirt: '#9a8c5a', blurb: 'Helpful organizer' },
+  { name: 'studio14', displayName: 'Cedar', shirt: '#6b7a4b', blurb: 'Quiet guide' },
+  { name: 'studio15', displayName: 'Nova', shirt: '#b5544a', blurb: 'Bold collaborator' },
 ];
 
 export const CAST_BY_NAME: Record<OfficeCharacterName, CastMember> =
   Object.fromEntries(OFFICE_CAST.map((c) => [c.name, c])) as Record<OfficeCharacterName, CastMember>;
 
-export const DEFAULT_CHARACTER: OfficeCharacterName = 'jim';
+export const DEFAULT_CHARACTER: OfficeCharacterName = 'studio02';
 
 export function hexToNumber(hex: string): number {
   return parseInt(hex.replace('#', ''), 16);

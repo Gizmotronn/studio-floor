@@ -1,5 +1,5 @@
-appId: in.munderdiffl.app
-productName: Munder Difflin
+appId: com.gizmotronn.studiofloor
+productName: Studio Floor
 copyright: Copyright © 2026 Chaitanya Giri
 
 # Where electron-updater looks for new versions (latest*.yml + assets on GitHub
@@ -9,18 +9,18 @@ copyright: Copyright © 2026 Chaitanya Giri
 publish:
   provider: github
   owner: chaitanyagiri
-  repo: munder-difflin
+  repo: studio-floor
 
 # Notarize + staple after signing, but only when APPLE_* creds are in the env
 # (the hook no-ops otherwise, so contributor builds still work). Root-level hook.
 afterSign: build/notarize.cjs
 
-# Register the munderdifflin:// URL scheme (shareable-hires deep link) in the
+# Register the studiofloor:// URL scheme (shareable-hires deep link) in the
 # packaged app: CFBundleURLTypes on macOS, registry entries via NSIS on Windows.
 protocols:
-  - name: Munder Difflin
+  - name: Studio Floor
     schemes:
-      - munderdifflin
+      - studiofloor
 
 # electron-vite emits the app into out/; package exactly that plus what the
 # runtime needs. node-pty is native, so keep it out of the asar.
@@ -72,15 +72,15 @@ mac:
   # the privacy prompt and, for a signed app, remembers the grant — so the user
   # is asked ONCE instead of on every agent action.
   extendInfo:
-    NSDocumentsFolderUsageDescription: "Munder Difflin runs your Claude Code agents, which read and write files in the project folders you point them at."
-    NSDesktopFolderUsageDescription: "Munder Difflin's agents may work on projects located on your Desktop."
-    NSDownloadsFolderUsageDescription: "Munder Difflin's agents may work on projects located in your Downloads."
-    NSRemovableVolumesUsageDescription: "Munder Difflin's agents may work on projects located on external volumes."
-    NSNetworkVolumesUsageDescription: "Munder Difflin's agents may work on projects located on network volumes."
+    NSDocumentsFolderUsageDescription: "Studio Floor runs your coding agents, which read and write files in the project folders you point them at."
+    NSDesktopFolderUsageDescription: "Studio Floor's agents may work on projects located on your Desktop."
+    NSDownloadsFolderUsageDescription: "Studio Floor's agents may work on projects located in your Downloads."
+    NSRemovableVolumesUsageDescription: "Studio Floor's agents may work on projects located on external volumes."
+    NSNetworkVolumesUsageDescription: "Studio Floor's agents may work on projects located on network volumes."
     # The microphone is used by two opt-in, off-by-default voice features: Free
     # Flow dictation (Groq transcription) and Realtime Michael (live voice chat
     # with the orchestrator via OpenAI). Mic access only happens while one is on.
-    NSMicrophoneUsageDescription: "Munder Difflin uses your microphone only for its opt-in voice features: Free Flow dictation (transcribed by Groq into the message queue) and talking to Michael in real time (streamed to OpenAI). The mic is off unless you turn one of these on."
+    NSMicrophoneUsageDescription: "Studio Floor uses your microphone only for its opt-in voice features. The mic is off unless you turn one on."
   # Hardened runtime + entitlements so the spawned `claude` agents inherit this
   # app's TCC responsibility (one grant covers them all) and node-pty can load.
   hardenedRuntime: true
@@ -110,10 +110,10 @@ mac:
       arch: [universal]
     - target: zip
       arch: [universal]
-  artifactName: Munder-Difflin-${version}-mac-${arch}.${ext}
+  artifactName: Studio-Floor-${version}-mac-${arch}.${ext}
 
 dmg:
-  title: Munder Difflin ${version}
+  title: Studio Floor ${version}
 
 # ---- Windows ----
 win:
@@ -128,11 +128,11 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-  artifactName: Munder-Difflin-${version}-win-x64-setup.exe
-  shortcutName: Munder Difflin
+  artifactName: Studio-Floor-${version}-win-x64-setup.exe
+  shortcutName: Studio Floor
 
 portable:
-  artifactName: Munder-Difflin-${version}-win-x64-portable.exe
+  artifactName: Studio-Floor-${version}-win-x64-portable.exe
 
 # ---- Linux ----
 linux:
@@ -141,4 +141,4 @@ linux:
   target:
     - target: AppImage
       arch: [x64]
-  artifactName: Munder-Difflin-${version}-linux-x86_64.AppImage
+  artifactName: Studio-Floor-${version}-linux-x86_64.AppImage

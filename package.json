@@ -1,8 +1,8 @@
 {
-  "name": "munder-difflin",
+  "name": "studio-floor",
   "version": "0.4.5",
   "private": true,
-  "description": "Clones for you and your team, working 24/7 — a free, local-first multi-agent harness that turns the CLI coding agent you already run into a clone of you, coordinating an office of agents on your machine.",
+  "description": "A local-first multi-agent studio that coordinates the coding agents you already use on your machine.",
   "main": "out/main/index.js",
   "author": "Chaitanya Giri",
   "homepage": "https://munderdiffl.in/",
