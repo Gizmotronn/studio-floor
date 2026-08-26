@@ -1,5 +1,11 @@
 node_modules/
 node_modules
+
+# Personal reference photos are local working material, not repository assets.
+# Keep the directory itself so the custom-avatar intake workflow is discoverable.
+/src/renderer/src/assets/custom-avatars/source/*
+!/src/renderer/src/assets/custom-avatars/source/.gitkeep
+/src/renderer/src/assets/custom-avatars/roster.json
 out/
 dist/
 .DS_Store

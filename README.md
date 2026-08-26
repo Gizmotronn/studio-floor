@@ -197,6 +197,13 @@ npm run dev        # launches the Electron app with hot reload
 On first launch you'll go through the onboarding wizard, then land on the floor. Use **Add agent** to
 spawn your first session — the GOD agent seats itself in Michael's office automatically.
 
+### Custom avatar preparation
+
+This fork includes a private intake area and a replacement guide for a future, non-*Office* roster.
+See [`AVATAR_CUSTOMIZATION.md`](./AVATAR_CUSTOMIZATION.md) before adding personal reference photos or
+custom sprite work. The current roster and artwork are intentionally unchanged until custom avatars are
+ready to replace them.
+
 ### Other scripts
 
 ```bash

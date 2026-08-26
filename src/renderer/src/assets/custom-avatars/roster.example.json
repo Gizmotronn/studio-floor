@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "avatars": [
+    {
+      "id": "your-avatar-id",
+      "displayName": "Display name",
+      "accent": "#5a6b8c",
+      "sourceReference": "source/your-avatar-id.png",
+      "spriteStatus": "reference-needed",
+      "notes": "Hair, clothing, glasses, facial hair, and other visual details to carry into the final pixel sprite."
+    }
+  ]
+}
