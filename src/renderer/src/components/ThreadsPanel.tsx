@@ -113,8 +113,8 @@ export function ThreadsPanel({ agentId }: ThreadsPanelProps) {
               <div style={{ padding: '8px 10px 10px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {thread.messages.map(m => {
                   const isExp = expanded[m.id];
-                  const long = m.body.length > 120;
-                  const shown = isExp || !long ? m.body : m.body.slice(0, 120) + '…';
+                      const long = m.body.length > 240;
+                      const shown = isExp || !long ? m.body : m.body.slice(0, 240) + '…';
                   return (
                     <div key={m.id} style={{ borderLeft: '2px solid var(--cth-ink-100)', paddingLeft: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -128,7 +128,7 @@ export function ThreadsPanel({ agentId }: ThreadsPanelProps) {
                           {new Date(m.created_at).toLocaleString()}
                         </span>
                       </div>
-                      <div style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 13, lineHeight: '18px', color: 'var(--cth-ink-700)', marginTop: 2, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      <div style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 14, lineHeight: '21px', color: 'var(--cth-ink-700)', marginTop: 4, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                         {shown}
                         {long && (
                           <button

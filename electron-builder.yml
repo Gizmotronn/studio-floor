@@ -1,5 +1,5 @@
 appId: com.gizmotronn.studiofloor
-productName: Studio Floor
+productName: Studio
 copyright: Copyright © 2026 Chaitanya Giri
 
 # Where electron-updater looks for new versions (latest*.yml + assets on GitHub
@@ -72,15 +72,15 @@ mac:
   # the privacy prompt and, for a signed app, remembers the grant — so the user
   # is asked ONCE instead of on every agent action.
   extendInfo:
-    NSDocumentsFolderUsageDescription: "Studio Floor runs your coding agents, which read and write files in the project folders you point them at."
-    NSDesktopFolderUsageDescription: "Studio Floor's agents may work on projects located on your Desktop."
-    NSDownloadsFolderUsageDescription: "Studio Floor's agents may work on projects located in your Downloads."
-    NSRemovableVolumesUsageDescription: "Studio Floor's agents may work on projects located on external volumes."
-    NSNetworkVolumesUsageDescription: "Studio Floor's agents may work on projects located on network volumes."
+    NSDocumentsFolderUsageDescription: "Studio runs your coding agents, which read and write files in the project folders you point them at."
+    NSDesktopFolderUsageDescription: "Studio's agents may work on projects located on your Desktop."
+    NSDownloadsFolderUsageDescription: "Studio's agents may work on projects located in your Downloads."
+    NSRemovableVolumesUsageDescription: "Studio's agents may work on projects located on external volumes."
+    NSNetworkVolumesUsageDescription: "Studio's agents may work on projects located on network volumes."
     # The microphone is used by two opt-in, off-by-default voice features: Free
     # Flow dictation (Groq transcription) and Realtime Michael (live voice chat
     # with the orchestrator via OpenAI). Mic access only happens while one is on.
-    NSMicrophoneUsageDescription: "Studio Floor uses your microphone only for its opt-in voice features. The mic is off unless you turn one on."
+    NSMicrophoneUsageDescription: "Studio uses your microphone only for its opt-in voice features. The mic is off unless you turn one on."
   # Hardened runtime + entitlements so the spawned `claude` agents inherit this
   # app's TCC responsibility (one grant covers them all) and node-pty can load.
   hardenedRuntime: true

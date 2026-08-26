@@ -217,6 +217,16 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
               <Icon name="code" /> IDE
             </span>
           </PixelButton>
+          <PixelButton variant="secondary" size="sm" onClick={() => { void window.cth.openBoard(); }}>
+            <span
+              className="cth-tip cth-tip-wrap"
+              data-tip="Open the task board in a separate full-size window."
+              aria-label="Open task board in a separate window"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+            >
+              <Icon name="check" /> BOARD
+            </span>
+          </PixelButton>
         </div>
       </div>
 

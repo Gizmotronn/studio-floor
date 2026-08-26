@@ -2204,8 +2204,9 @@ ipcMain.handle('hire:openFile', async () => {
  * window — cascades its position, and on close stops only its OWN terminals
  * while the app keeps running.
  */
-function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
+function createWindow(opts: { floor?: boolean; board?: boolean } = {}): BrowserWindow {
   const isFloor = opts.floor === true;
+  const isBoard = opts.board === true;
 
   // Primary restores saved geometry; floors cascade off the focused window.
   let saved: WindowBounds | null = null;
@@ -2219,7 +2220,7 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
     ...(geom && geom.x !== undefined && geom.y !== undefined ? { x: geom.x, y: geom.y } : {}),
     minWidth: MIN_WIN.width,
     minHeight: MIN_WIN.height,
-    title: isFloor ? 'Studio Floor — Floor' : 'Studio Floor',
+    title: isBoard ? 'Studio — Kanban' : isFloor ? 'Studio — Floor' : 'Studio',
     backgroundColor: '#FFF8E7',
     titleBarStyle: 'hiddenInset',
     show: false,
@@ -2342,7 +2343,7 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
   });
 
   // The primary is the default PTY sink; floors route purely by per-PTY owner.
-  if (!isFloor) ptyManager.attachWebContents(wc);
+  if (!isFloor && !isBoard) ptyManager.attachWebContents(wc);
 
   // A main-frame reload unmounts the renderer's hire subscription — queue again
   // until the fresh renderer drains. Guard on isMainFrame: a stray sub-frame
@@ -2353,9 +2354,9 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
   });
 
   if (isDev && process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(process.env.ELECTRON_RENDERER_URL);
+    win.loadURL(`${process.env.ELECTRON_RENDERER_URL}${process.env.ELECTRON_RENDERER_URL.includes('?') ? '&' : '?'}view=${isBoard ? 'board' : 'studio'}`);
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'));
+    win.loadFile(join(__dirname, '../renderer/index.html'), { query: { view: isBoard ? 'board' : 'studio' } });
   }
 
   win.on('closed', () => {
@@ -2379,6 +2380,10 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
 function openFloor(): BrowserWindow | null {
   if (!readConfig().multiWindow) return null;
   return createWindow({ floor: true });
+}
+
+function openBoard(): BrowserWindow {
+  return createWindow({ board: true });
 }
 
 /** Build + install the application menu. Only called when multiWindow is on, so
@@ -2826,6 +2831,16 @@ async function spawnAgentCore(opts: AgentSpawnOptions, owner: Electron.WebConten
   const nonInteractiveEnv = nonInteractiveEnvForProvider(provider);
   if (Object.keys(nonInteractiveEnv).length > 0) {
     opts.env = { ...(opts.env ?? {}), ...nonInteractiveEnv };
+  }
+  // Codex can authenticate through the user's ChatGPT subscription (`codex login`)
+  // as well as through an API key. An inherited OPENAI_API_KEY takes precedence
+  // in the CLI and makes a subscription-authenticated worker look API-key-only,
+  // so keep that ambient key out of Codex workers. The user's ~/.codex/auth.json
+  // is linked into the per-agent CODEX_HOME by installCodexHooks above.
+  if (provider === 'codex') {
+    const env = { ...(opts.env ?? {}) };
+    delete env.OPENAI_API_KEY;
+    opts.env = env;
   }
   // ── BYOK keys + per-provider config for the non-Claude CLI engines (v0.3.1) ──
   // OpenCode / Crush / pi / qwen read BYOK API keys from standard env vars and, for
@@ -3636,6 +3651,10 @@ ipcMain.handle('app:cancelClose', () => {
 ipcMain.handle('window:newFloor', () => {
   const win = openFloor();
   return { ok: win != null };
+});
+ipcMain.handle('window:board', () => {
+  openBoard();
+  return { ok: true };
 });
 
 // ─── IPC: closing time (graceful, data-loss-free shutdown) ──────────────────

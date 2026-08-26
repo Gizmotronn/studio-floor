@@ -54,7 +54,7 @@ export function SidebarSplitter({
         setActive(true);
         e.preventDefault();
       }}
-      onDoubleClick={() => onChange(420)}
+      onDoubleClick={() => onChange(520)}
       title="Drag to resize · double-click to reset"
       style={{
         width: 10,

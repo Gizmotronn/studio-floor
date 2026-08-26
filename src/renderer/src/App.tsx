@@ -25,14 +25,16 @@ import { SidebarSplitter } from '@/components/SidebarSplitter';
 import { acquireTerminal, notifyThemeChangeAll } from '@/components/terminalPool';
 import { FullscreenTerminal } from '@/components/FullscreenTerminal';
 import { TaskDetailOverlay } from '@/components/TaskDetailOverlay';
+import { TasksKanban } from '@/components/TasksKanban';
 import { IdePanel } from '@/ide/IdePanel';
 import { useHoldOptionToTalk } from '@/freeflow/holdOption';
-import brandLogo from '@brand/logo.png?url';
+import brandLogo from '@/assets/studio-icon.png?url';
 
 // Injected at build time from package.json (see electron.vite.config.ts).
 declare const __APP_VERSION__: string;
 
 export function App() {
+  const boardWindow = new URLSearchParams(window.location.search).get('view') === 'board';
   const agent = useStore(selectedAgent);
   const agents = useStore(s => s.agents);
   const agentCount = agents.length;
@@ -238,7 +240,12 @@ export function App() {
   }, []);
 
   if (!config) {
+    if (boardWindow) return <TasksKanban />;
     return <div style={{ width: '100vw', height: '100vh', background: 'var(--cth-cream-100)' }} />;
+  }
+
+  if (boardWindow) {
+    return <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--cth-paper-200)' }}><TasksKanban /></div>;
   }
 
   if (!config.onboardingComplete) {
@@ -282,8 +289,8 @@ export function App() {
       >
         <img
           src={brandLogo}
-          alt="Studio Floor"
-          style={{ height: 20, width: 'auto', display: 'block' }}
+          alt="Studio"
+          style={{ height: 24, width: 24, objectFit: 'contain', display: 'block', borderRadius: 5 }}
         />
         {/* v0.3.7: the version is no longer inert text — it doubles as the
             update control (check / download / restart to update). */}

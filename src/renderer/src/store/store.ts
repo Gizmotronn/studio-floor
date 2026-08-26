@@ -586,7 +586,7 @@ const initialSidebarWidth = (() => {
     const n = v ? parseInt(v, 10) : NaN;
     if (!Number.isNaN(n) && n >= 320 && n <= 1200) return n;
   } catch { /* noop */ }
-  return 420;
+  return 520;
 })();
 const initialSidebarTab: SidebarTab = (() => {
   try {

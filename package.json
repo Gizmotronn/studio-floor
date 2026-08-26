@@ -2,7 +2,7 @@
   "name": "studio-floor",
   "version": "0.4.5",
   "private": true,
-  "description": "A local-first multi-agent studio that coordinates the coding agents you already use on your machine.",
+  "description": "Studio — a local-first workspace for coordinating the coding agents you already use.",
   "main": "out/main/index.js",
   "author": "Chaitanya Giri",
   "homepage": "https://munderdiffl.in/",

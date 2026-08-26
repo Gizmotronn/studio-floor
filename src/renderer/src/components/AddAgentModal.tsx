@@ -1005,6 +1005,11 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                         {' '}Live end-to-end is pending real model calls (verify on-device).
                       </div>
                     )}
+                    {provider === 'codex' && (
+                      <div style={{ fontSize: 12, color: 'var(--cth-ink-700)', lineHeight: '17px', margin: '2px 0 6px', padding: 8, background: 'var(--cth-mint-light)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)' }}>
+                        Codex uses your existing ChatGPT subscription login. If this machine is not signed in yet, run <code>codex login</code> once in Terminal; no OpenAI API key is required.
+                      </div>
+                    )}
 
                     <Row label={config.autoMode && preset.autoFlag ? 'Command (auto mode on)' : 'Command'}>
                       <input

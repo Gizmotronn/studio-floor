@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import brandLogo from '@/assets/studio-floor-icon.png?url';
+import brandLogo from '@/assets/studio-icon.png?url';
 import './design/global.css';
 
 const favicon = document.createElement('link');
@@ -14,7 +14,7 @@ const splashMark = document.querySelector('#cth-splash .mk');
 if (splashMark) {
   const img = document.createElement('img');
   img.src = brandLogo;
-  img.alt = 'Studio Floor';
+  img.alt = 'Studio';
   img.style.cssText = 'height:56px;width:auto;display:block';
   splashMark.replaceWith(img);
 }

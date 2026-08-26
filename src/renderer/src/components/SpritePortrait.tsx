@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { paintCastPortrait, type OfficeCharacterName } from '@/scene/office/cast';
-import { PORTRAIT_W, PORTRAIT_H } from '@/scene/office/portraitArt';
+import { SCENE_W, SCENE_H } from '@/scene/office/portraitArt';
 
-const FRAME_W = PORTRAIT_W;
-const FRAME_H = PORTRAIT_H;
+const FRAME_W = SCENE_W;
+const FRAME_H = SCENE_H;
 
 export interface SpritePortraitProps {
   character: OfficeCharacterName;
@@ -14,7 +14,7 @@ export interface SpritePortraitProps {
   background?: string;
 }
 
-/** Static standing portrait of an Office cast member (recolored LimeZu sprite). */
+/** Static standing portrait of a Studio Floor teammate. */
 export function SpritePortrait({
   character,
   scale = 2,
