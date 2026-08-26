@@ -16,6 +16,7 @@ import { EditAgentModal } from './EditAgentModal';
 import { GitTab } from './GitTab';
 import { Icon } from './Icon';
 import { AgentNameEditor } from './AgentNameEditor';
+import { HandoffModal } from './HandoffModal';
 import { useStore, type Agent } from '@/store/store';
 import { usePtyParser } from '@/hooks/usePtyParser';
 
@@ -27,6 +28,7 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
   const [openTerminalState, setOpenTerminalState] = useState<'idle' | 'opening' | 'ok' | 'error'>('idle');
   const [openTerminalError, setOpenTerminalError] = useState<string | undefined>();
   const [editOpen, setEditOpen] = useState(false);
+  const [handoffOpen, setHandoffOpen] = useState(false);
 
   /**
    * THE HEADER STRIP HAS TO GIVE SOMETHING UP WHEN THE SIDEBAR IS DRAGGED IN.
@@ -180,6 +182,11 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
             <Icon name="edit" />{!compactHeader && ' edit'}
           </span>
         </PixelButton>
+        <PixelButton variant="secondary" size="sm" onClick={() => setHandoffOpen(true)}>
+          <span aria-label={`Hand off from ${agent.name}`} title={`Send a focused handoff from ${agent.name} to another agent`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="bell" />{!compactHeader && ' handoff'}
+          </span>
+        </PixelButton>
         {/* v0.3.4: the IDE lives at agent level (replaces the old files tab) —
             opens the full-window Monaco editor rooted at this agent's workspace. */}
         <PixelButton variant="secondary" size="sm" onClick={() => useStore.getState().setIdeOpen(true, agent.id)}>
@@ -287,6 +294,7 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
       {editOpen && (
         <EditAgentModal agent={agent} onClose={() => setEditOpen(false)} />
       )}
+      {handoffOpen && <HandoffModal from={agent} onClose={() => setHandoffOpen(false)} />}
     </PixelPanel>
   );
 }

@@ -335,7 +335,9 @@ interface State {
 }
 
 const LS_SIDEBAR_WIDTH = 'cth.sidebarWidth';
-const LS_SIDEBAR_TAB = 'cth.sidebarTab';
+// v2 makes the human conversation the default instead of dropping users into
+// raw commands and diffs. The previous preference is intentionally not reused.
+const LS_SIDEBAR_TAB = 'cth.sidebarTab.v2';
 const LS_AGENTS = 'cth.agents';
 const LS_ARCHIVED = 'cth.archivedAgents';
 const LS_RESTORABLE = 'cth.restorableAgents';
@@ -593,7 +595,9 @@ const initialSidebarTab: SidebarTab = (() => {
     const v = window.localStorage.getItem(LS_SIDEBAR_TAB);
     if (v === 'terminal' || v === 'messages' || v === 'traces' || v === 'git') return v;
   } catch { /* noop */ }
-  return 'terminal';
+  // Conversation is the human-facing default. Raw terminal output remains
+  // available on the terminal tab for debugging and advanced workflows.
+  return 'messages';
 })();
 
 /** Does the user want focus mode as their default view?

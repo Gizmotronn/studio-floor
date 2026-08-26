@@ -11,9 +11,15 @@ import { paintPortrait, sceneFrameBufs, SCENE_W, SCENE_H } from './portraitArt';
 import carlaWalkSheetUrl from '@/assets/custom-avatars/sprites/carla-walk.png?url';
 import nickWalkSheetUrl from '@/assets/custom-avatars/sprites/nick-walk.png?url';
 import engineerWalkSheetUrl from '@/assets/custom-avatars/sprites/engineer-walk.png?url';
+import bjornWalkSheetUrl from '@/assets/custom-avatars/sprites/bjorn-walk.png?url';
+import mikeWalkSheetUrl from '@/assets/custom-avatars/sprites/mike-walk.png?url';
+import andrewWalkSheetUrl from '@/assets/custom-avatars/sprites/andrew-walk.png?url';
+import robWalkSheetUrl from '@/assets/custom-avatars/sprites/rob-walk.png?url';
+import claudiaWalkSheetUrl from '@/assets/custom-avatars/sprites/claudia-walk.png?url';
 
 export type OfficeCharacterName =
   | 'carla' | 'nick' | 'engineer'
+  | 'bjorn' | 'mike' | 'andrew' | 'rob' | 'claudia'
   | 'studio01' | 'studio02' | 'studio03' | 'studio04' | 'studio05'
   | 'studio06' | 'studio07' | 'studio08' | 'studio09' | 'studio10'
   | 'studio11' | 'studio12' | 'studio13' | 'studio14' | 'studio15';
@@ -32,6 +38,11 @@ export const OFFICE_CAST: CastMember[] = [
   { name: 'carla', displayName: 'Carla', shirt: '#3f9d9a', blurb: 'Designer' },
   { name: 'nick', displayName: 'Nick', shirt: '#c7903e', blurb: 'CEO' },
   { name: 'engineer', displayName: 'You', shirt: '#4d79c7', blurb: 'Engineer' },
+  { name: 'bjorn', displayName: 'Bjorn', shirt: '#5b8fa8', blurb: 'Scientist / researcher' },
+  { name: 'mike', displayName: 'Mike', shirt: '#6c7bb8', blurb: 'Executive / advisor' },
+  { name: 'andrew', displayName: 'Andrew', shirt: '#65758f', blurb: 'Advisor' },
+  { name: 'rob', displayName: 'Rob', shirt: '#8b6c62', blurb: 'Advisor' },
+  { name: 'claudia', displayName: 'Claudia', shirt: '#b06c9a', blurb: 'Designer' },
 ];
 
 export const CAST_BY_NAME: Record<OfficeCharacterName, CastMember> =
@@ -56,6 +67,11 @@ const CUSTOM_WALK_SHEETS: Partial<Record<OfficeCharacterName, CustomWalkSheet>> 
   carla: { url: carlaWalkSheetUrl, removeLightCheckerboard: true },
   nick: { url: nickWalkSheetUrl },
   engineer: { url: engineerWalkSheetUrl },
+  bjorn: { url: bjornWalkSheetUrl },
+  mike: { url: mikeWalkSheetUrl },
+  andrew: { url: andrewWalkSheetUrl },
+  rob: { url: robWalkSheetUrl },
+  claudia: { url: claudiaWalkSheetUrl },
 };
 
 function bufToTexture(buf: Uint8ClampedArray): Texture {

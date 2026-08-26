@@ -34,6 +34,7 @@ import {
   type AgentProvider
 } from '@/store/config';
 import { canReceiveInbox } from '@shared/agentProvider';
+import { HandoffModal } from './HandoffModal';
 
 /** Michael's control surface. Shown instead of the plain terminal/files panel
  *  when the god agent is selected: terminal + queue, the floor roster (with
@@ -82,6 +83,7 @@ const TABS: { key: CCTab; label: string; icon: Parameters<typeof Icon>[0]['name'
  *  cols/rows and corrupt the display. */
 export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent; fullscreen?: boolean }) {
   const [tab, setTab] = useState<CCTab>('terminal');
+  const [handoffOpen, setHandoffOpen] = useState(false);
   // The trigger-history ledger has nothing to say until an outside party can
   // reach us, so its tab appears only once an org key or a webhook exists. This
   // is the first config-gated tab in the panel: TABS stays the canonical order
@@ -227,8 +229,14 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
               <Icon name="check" /> BOARD
             </span>
           </PixelButton>
+          <PixelButton variant="secondary" size="sm" onClick={() => setHandoffOpen(true)}>
+            <span aria-label="Hand off to another agent" title="Send a focused handoff to another agent" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Icon name="bell" /> HANDOFF
+            </span>
+          </PixelButton>
         </div>
       </div>
+      {handoffOpen && <HandoffModal from={agent} onClose={() => setHandoffOpen(false)} />}
 
       {/* Tab bar — ONE row, tabs at their natural width, scrolling only if the
           panel is genuinely too narrow for all of them.
