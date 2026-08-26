@@ -24,6 +24,7 @@ import { canDeliverToAgent, deliverWithAcknowledgement, checkPrecondition } from
 import { OFFICE_CAST, DEFAULT_CHARACTER } from '@/scene/office/cast';
 
 const GOD_ID = 'god';
+const BOSS_NAME = 'Liam';
 /** Accent palette for MAIN-spawned (voice-hired) agents — picked deterministically
  *  from the agent id so the same agent always gets the same colour. Mirrors the
  *  AddAgentModal palette. */
@@ -72,7 +73,7 @@ function withStandingGoal(agent: Agent, text: string): string {
 // The first thing Michael (god) is told on a fresh spawn — orient him and put
 // him to work running the floor. Kept terse and action-oriented.
 const INITIAL_GOD_PROMPT = [
-  "You're online as Michael, the orchestrator of the hive. Get oriented, then start running the floor:",
+  "You're online as Liam's floor orchestrator. Liam is the boss. Get oriented, then start running the floor:",
   '1. Read your memory.md and drain every message in your inbox.',
   '2. Review board.md + tasks.json and the current roster of agents (active vs archived).',
   '3. Check fleet health: read fleet.json in the hive root for every agent\'s live tokens, cost, status, breaker level, and inbox backlog (`claude agents` will NOT show your hive\'s agents). Flag anyone stalled, over-budget, or breaker-armed.',
@@ -397,16 +398,18 @@ export function useHive(config: HarnessConfig | null): void {
         // fresh session. Without this the most important context on the floor —
         // the orchestrator's — was lost on every restart.
         resume: true,
-        hive: { id: GOD_ID, name: 'Michael', provider: godProvider, cwd: config.harnessHome!, isGod: true, role: 'orchestrator (god)' }
+        hive: { id: GOD_ID, name: BOSS_NAME, provider: godProvider, cwd: config.harnessHome!, isGod: true, role: 'Liam\'s floor orchestrator', personality: 'Calm, decisive, curious, and accountable. You support Liam; you do not replace him as the boss.', memory: 'Liam is the human boss and final decision-maker. Route work, context, and recommendations to Liam; never present yourself as the owner.' }
       });
       if (cancelled) { godSpawning.current = false; return; }
       if (!res.ok) { godSpawning.current = false; useStore.getState().setGodStatus('failed'); return; }
       const god: Agent = {
         id: GOD_ID,
-        name: 'Michael',
+        name: BOSS_NAME,
         character: 'engineer',
         accent: 'lemon',
-        description: 'god — runs the floor, triages requests, escalates only critical calls to you',
+        description: 'Liam\'s floor orchestrator — coordinates the team while Liam remains the decision-maker',
+        personality: 'Calm, decisive, curious, and accountable. Supports Liam without replacing him as the boss.',
+        memory: 'Liam is the human boss and final decision-maker.',
         project: 'hive',
         tmuxTarget: '',
         cwd: config.harnessHome!,
@@ -437,7 +440,7 @@ export function useHive(config: HarnessConfig | null): void {
       bootGraceUntil.current[GOD_ID] = Date.now() + BOOT_GRACE_MS;
       void (async () => {
         try {
-          const remoteCommand = remoteControlCommandForProvider(godProvider, 'Michael');
+          const remoteCommand = remoteControlCommandForProvider(godProvider, BOSS_NAME);
           if (remoteCommand) {
             // settleMs pauses the chain ~1.5s after /remote-control before the
             // orientation prompt (fresh spawns only) is submitted next.

@@ -42,6 +42,8 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   const [model, setModel] = useState<string | undefined>(agent.model);
   const [description, setDescription] = useState(agent.description);
   const [goal, setGoal] = useState(agent.goal ?? '');
+  const [personality, setPersonality] = useState(agent.personality ?? '');
+  const [memory, setMemory] = useState(agent.memory ?? '');
 
   useEffect(() => {
     void window.cth.getConfig().then(setConfig).catch(() => setConfig(null));
@@ -56,6 +58,8 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
     setModel(agent.model);
     setDescription(agent.description);
     setGoal(agent.goal ?? '');
+    setPersonality(agent.personality ?? '');
+    setMemory(agent.memory ?? '');
   }, [agent.id]);
 
   const pickProvider = (id: AgentProvider) => {
@@ -86,7 +90,9 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
       model,
       command,
       description: trimmedDescription,
-      goal: trimmedGoal || undefined
+      goal: trimmedGoal || undefined,
+      personality: personality.trim() || undefined,
+      memory: memory.trim() || undefined
     });
     onClose();
   };
@@ -275,6 +281,12 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
                   rows={4}
                   style={{ ...inputStyle, fontFamily: 'var(--cth-font-ui)', resize: 'vertical', minHeight: 200 }}
                 />
+              </Row>
+              <Row label="Personality">
+                <textarea value={personality} onChange={(e) => setPersonality(e.target.value)} placeholder="how this agent thinks, speaks, and gives feedback" rows={3} style={{ ...inputStyle, fontFamily: 'var(--cth-font-ui)', resize: 'vertical' }} />
+              </Row>
+              <Row label="Personal memory seed">
+                <textarea value={memory} onChange={(e) => setMemory(e.target.value)} placeholder="relationships, history, preferences, and context" rows={3} style={{ ...inputStyle, fontFamily: 'var(--cth-font-ui)', resize: 'vertical' }} />
               </Row>
             </Section>
               </div>

@@ -5,7 +5,7 @@ import { SpritePortrait } from './SpritePortrait';
 import { Icon } from './Icon';
 import { ProviderLogo } from './ProviderLogo';
 import { useStore, type Agent } from '@/store/store';
-import { OFFICE_CAST, DEFAULT_CHARACTER, type OfficeCharacterName } from '@/scene/office/cast';
+import { AGENT_PROFILES, OFFICE_CAST, DEFAULT_CHARACTER, type OfficeCharacterName } from '@/scene/office/cast';
 import { type AccentColorName } from '@/design/tokens';
 import type { HireManifest } from '@shared/hire';
 import { hireQueueProgress } from '@shared/hireQueue';
@@ -197,6 +197,8 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
     pendingHire ? hireCommand(pendingHire) : buildSpawnCommand(config, initialModel, initialProvider)
   );
   const [description, setDescription] = useState(pendingHire?.description ?? 'a fresh harness');
+  const [personality, setPersonality] = useState(pendingHire?.personality ?? AGENT_PROFILES[character]?.personality ?? '');
+  const [memory, setMemory] = useState(pendingHire?.memory ?? AGENT_PROFILES[character]?.memory ?? '');
   const [hireMeta, setHireMeta] = useState<HireManifest | null>(pendingHire);
 
   // Picking a model rebuilds the command; the command field stays editable for
@@ -334,7 +336,10 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
     setName(m.name);
     // A manifest that names an agent but omits `character` should get the
     // matching avatar rather than the Jim default (issue #191).
-    setCharacter(m.character ? knownCharacter(m.character) : (characterForName(m.name ?? '') ?? knownCharacter(undefined)));
+    const nextCharacter = m.character ? knownCharacter(m.character) : (characterForName(m.name ?? '') ?? knownCharacter(undefined));
+    setCharacter(nextCharacter);
+    setPersonality(m.personality ?? AGENT_PROFILES[nextCharacter]?.personality ?? '');
+    setMemory(m.memory ?? AGENT_PROFILES[nextCharacter]?.memory ?? '');
     setAccent(knownAccent(m.accent));
     setProvider(m.provider ?? initialProvider);
     setModel(m.model);
@@ -418,6 +423,8 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
         provider,
         cwd,
         role: description.trim() || undefined,
+        personality: personality.trim() || undefined,
+        memory: memory.trim() || undefined,
         // A hire manifest may carry validated capability tags (routing hints).
         capabilities: hireMeta?.capabilities
       }
@@ -450,6 +457,8 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
       character,
       accent,
       description: description.trim() || 'a fresh harness',
+      personality: personality.trim() || undefined,
+      memory: memory.trim() || undefined,
       project: basename(projectCwd),
       tmuxTarget: '',
       cwd: spawnedCwd,
@@ -670,7 +679,11 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                           const next = e.target.value;
                           setName(next);
                           const match = characterForName(next);
-                          if (match) setCharacter(match);
+                          if (match) {
+                            setCharacter(match);
+                            setPersonality(AGENT_PROFILES[match]?.personality ?? '');
+                            setMemory(AGENT_PROFILES[match]?.memory ?? '');
+                          }
                         }}
                         placeholder="Ada"
                         style={inputStyle}
@@ -682,7 +695,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                         {OFFICE_CAST.map(c => (
                           <button
                             key={c.name}
-                            onClick={() => { setCharacter(c.name); setName(c.displayName); }}
+                            onClick={() => { setCharacter(c.name); setName(c.displayName); setPersonality(AGENT_PROFILES[c.name]?.personality ?? ''); setMemory(AGENT_PROFILES[c.name]?.memory ?? ''); }}
                             title={c.blurb}
                             style={{
                               padding: 4,
@@ -1069,6 +1082,26 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                         placeholder="long-running directive injected on every prompt"
                         rows={2}
                         style={{ ...inputStyle, fontFamily: 'var(--cth-font-ui)', resize: 'none' }}
+                      />
+                    </Row>
+
+                    <Row label="Personality">
+                      <textarea
+                        value={personality}
+                        onChange={(e) => setPersonality(e.target.value)}
+                        placeholder="how this agent thinks, speaks, and gives feedback"
+                        rows={3}
+                        style={{ ...inputStyle, fontFamily: 'var(--cth-font-ui)', resize: 'vertical' }}
+                      />
+                    </Row>
+
+                    <Row label="Personal memory seed (optional)">
+                      <textarea
+                        value={memory}
+                        onChange={(e) => setMemory(e.target.value)}
+                        placeholder="relationships, history, preferences, and context to remember"
+                        rows={3}
+                        style={{ ...inputStyle, fontFamily: 'var(--cth-font-ui)', resize: 'vertical' }}
                       />
                     </Row>
                   </>

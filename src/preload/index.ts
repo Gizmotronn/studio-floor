@@ -47,6 +47,8 @@ export interface HiveAgentMeta {
   /** Which CLI this agent runs on (claude/codex/grok/antigravity/custom); defaults claude. */
   provider?: AgentProvider;
   role?: string;
+  personality?: string;
+  memory?: string;
   capabilities?: string[];
   cwd: string;
   isGod?: boolean;

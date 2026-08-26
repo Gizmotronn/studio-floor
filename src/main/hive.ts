@@ -134,6 +134,8 @@ export interface AgentMeta {
   /** Which CLI this agent runs on. Defaults to 'claude' when unset (legacy). */
   provider?: AgentProvider;
   role?: string;
+  personality?: string;
+  memory?: string;
   capabilities?: string[];
   cwd: string;
   isGod?: boolean;
@@ -643,7 +645,14 @@ export class HiveManager {
 
     const memory = join(dir, 'memory.md');
     if (!existsSync(memory)) {
-      writeFileSync(memory, `# Memory — ${meta.name} (${meta.id})\n\n_Append durable facts, decisions, and context below._\n`, 'utf8');
+      const seed = meta.memory?.trim();
+      writeFileSync(memory, `# Memory — ${meta.name} (${meta.id})\n\n${seed ? `## Personal context\n\n${seed}\n\n` : ''}_Append durable facts, decisions, and context below._\n`, 'utf8');
+    } else if (meta.memory?.trim()) {
+      const existing = readFileSync(memory, 'utf8');
+      const marker = '## Personal context';
+      if (!existing.includes(marker)) {
+        writeFileSync(memory, `${existing.trimEnd()}\n\n${marker}\n\n${meta.memory.trim()}\n`, 'utf8');
+      }
     }
     ensureMineIgnore(dir); // keep settings.json / cursor / messages out of mempalace's index
     const cursor = join(dir, 'cursor.json');
@@ -1252,6 +1261,7 @@ export class HiveManager {
       `# ${meta.name} (${meta.id})`,
       '',
       `- Role: ${meta.role ?? (meta.isGod ? 'orchestrator (god)' : 'agent')}`,
+      meta.personality ? `- Personality: ${meta.personality}` : '',
       `- Capabilities: ${caps}`,
       `- Working directory: ${meta.cwd}`,
       meta.isGod ? '- You are the **god / orchestrator**. You run the floor — keep awareness of the whole team, delegate execution, and personally own only the important calls (decomposition, sign-offs, conflicts, integration), not the grunt work.' : '',
@@ -1341,6 +1351,7 @@ export class HiveManager {
       : `SLACK REPLIES: If god dispatches you a task that came from Slack, it will include an exact \`"${hiveNode}" "<helper>" --channel … --thread … --text "…"\` reply command — when you finish, run it VERBATIM to post your result back to that thread yourself. The reply must be SUBSTANTIVE Slack mrkdwn (a short *bold* headline + the actual outcome/specifics/links), NEVER a bare "done".`;
     return [
       `You are "${meta.name}" (${meta.id}), an autonomous agent in a collaborating hive of Claude agents.`,
+      meta.personality ? `PERSONALITY: ${meta.personality}` : '',
       `Your private workspace is ${dir}. The shared hive is ${root}. Full protocol: ${inRoot('PROTOCOL.md')}.`,
       '',
       'HIVE PROTOCOL — follow it every task:',

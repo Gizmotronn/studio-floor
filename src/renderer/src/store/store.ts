@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { AccentColorName } from '@/design/tokens';
-import type { OfficeCharacterName } from '@/scene/office/cast';
+import { AGENT_PROFILES, type OfficeCharacterName } from '@/scene/office/cast';
 import type { ThemeId } from '@/scene/office/themeRegistry';
 import type { StatusKind } from '@/components/PixelBadge';
 import type { AgentProvider } from '@shared/agentProvider';
@@ -46,6 +46,10 @@ export interface Agent {
   /** persistent job / hire one-liner — same string as hive registry `role`.
    *  Live status belongs on `status` / `action`, never here. */
   description: string;
+  /** Personal voice and interaction style injected into the agent brief. */
+  personality?: string;
+  /** Durable relationship/context seed used when this agent's memory is created. */
+  memory?: string;
   project: string;
   /** legacy field — populated only for the seeded mock agents */
   tmuxTarget: string;
@@ -472,15 +476,20 @@ function loadPersistedAgents(): Agent[] {
     const parsed = persistedSlice(LS_AGENTS, fileRoster?.agents);
     if (!parsed.length) return [];
     // Reset volatile run-state; the PTY stream / mock loop will repopulate it.
-    return parsed.map((a) => ({
+    return parsed.map((a) => {
+      const profile = AGENT_PROFILES[a.character];
+      return ({
       ...a,
+      personality: a.personality ?? profile?.personality,
+      memory: a.memory ?? profile?.memory,
       progress: 0,
       status: 'idle',
       action: 'reconnecting…',
       currentStation: 'desk',
       carrying: undefined,
       recentTextTs: Date.now(),
-    }));
+      });
+    });
   } catch {
     return [];
   }

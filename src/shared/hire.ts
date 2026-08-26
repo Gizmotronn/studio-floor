@@ -47,6 +47,9 @@ export interface HireManifest {
   name: string;
   /** One-line role, e.g. "Documentation writer" — lands in identity.md + card. */
   description?: string;
+  /** Optional interaction style and durable relationship context. */
+  personality?: string;
+  memory?: string;
   /** The standing goal/mission text pre-filled into the goal field. */
   goal?: string;
   /** Office cast sprite id (e.g. 'pam'); unknown values fall back to default. */
