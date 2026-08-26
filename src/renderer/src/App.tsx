@@ -441,8 +441,8 @@ export function App() {
                 color: 'var(--cth-ink-500)'
               }}>WAKING THE FLOOR</div>
               <p style={{ margin: 0, fontSize: 13, textAlign: 'center', color: 'var(--cth-ink-700)' }}>
-                Michael is clocking in.<br />
-                The terminal will land here once he's seated.
+                Liam's floor orchestrator is clocking in.<br />
+                The team view will land here once the floor is ready.
               </p>
             </PixelPanel>
           ) : (
