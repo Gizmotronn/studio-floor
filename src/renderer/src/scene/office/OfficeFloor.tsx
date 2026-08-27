@@ -394,8 +394,22 @@ export function OfficeFloor() {
       // Seat 0 is desk-ceo — "Michael's room" — reserved for the god agent.
       // All other workers claim seats from 1 onward.
       const GOD_SEAT = 0;
+      const preferredSeatFor = (agent: Agent): number | undefined => {
+        if (agent.isGod) return GOD_SEAT;
+        const preferredName = agent.name === 'Carla' ? 'pc-2'
+          : agent.name === 'Claudia' ? 'pc-3' : undefined;
+        if (!preferredName) return undefined;
+        const tile = mapRenderer.getSpawnPoint(preferredName);
+        if (!tile) return undefined;
+        return seatTiles.findIndex((s) => s.x === tile.x && s.y === tile.y);
+      };
       const claimSeat = (agent: Agent): number | null => {
         if (agent.isGod) { seatClaims.add(GOD_SEAT); return GOD_SEAT; }
+        const preferred = preferredSeatFor(agent);
+        if (preferred !== undefined && preferred > 0 && !seatClaims.has(preferred)) {
+          seatClaims.add(preferred);
+          return preferred;
+        }
         for (let i = 1; i < seatTiles.length; i++) {
           if (!seatClaims.has(i)) { seatClaims.add(i); return i; }
         }
@@ -1037,8 +1051,89 @@ export function OfficeFloor() {
         }
       };
 
+      // Personal desk props are deliberately drawn as a small overlay instead
+      // of baking them into the map. That keeps the floor layout swappable and
+      // lets the human-facing details react to live work (paperwork and the
+      // hedgehog) without rebuilding the tile map.
+      const personalPropsG = new Graphics();
+      personalPropsG.eventMode = 'none';
+      charLayer.addChild(personalPropsG);
+      let deskLifeClock = 0;
+      let humanPaperCount = 0;
+      const drawPersonalProps = (t: number): void => {
+        personalPropsG.clear();
+        const ts = mapRenderer.tileSize;
+        const laptop = (x: number, y: number): void => {
+          personalPropsG.rect(x, y, 13, 8).fill(0x343d4b);
+          personalPropsG.rect(x + 1, y + 1, 11, 5).fill(0x7fb9d2);
+          personalPropsG.rect(x + 3, y + 2, 7, 1).fill(0xc7ebf2);
+          personalPropsG.rect(x + 5, y + 7, 3, 1).fill(0xb8a98d);
+        };
+        const sketchpad = (x: number, y: number): void => {
+          personalPropsG.rect(x, y, 9, 7).fill(0xf3ead7).stroke({ color: 0x6a5960, width: 1 });
+          personalPropsG.rect(x + 2, y + 2, 5, 1).fill(0xb9a890);
+          personalPropsG.rect(x + 2, y + 4, 4, 1).fill(0xb9a890);
+        };
+        const studioDisplay = (x: number, y: number): void => {
+          personalPropsG.rect(x, y, 18, 9).fill(0x282e3a);
+          personalPropsG.rect(x + 1, y + 1, 16, 6).fill(0xc58fc4);
+          personalPropsG.rect(x + 3, y + 3, 11, 1).fill(0xf0c9de);
+          personalPropsG.rect(x + 8, y + 9, 2, 3).fill(0x4a5360);
+          personalPropsG.rect(x + 5, y + 12, 8, 1).fill(0x4a5360);
+        };
+        const paperPile = (x: number, y: number, count: number): void => {
+          for (let i = 0; i < count; i++) {
+            personalPropsG.rect(x + (i % 2), y - i * 2, 10, 5)
+              .fill(i % 2 ? 0xf0e4c8 : 0xfff6de)
+              .stroke({ color: 0xb8a98d, width: 0.5 });
+          }
+        };
+
+        // Open-plan row: Liam → Carla → Claudia, with deliberately different
+        // tools on each desk. These are also visible when an agent is away.
+        const openY = 11 * ts + 3;
+        laptop(2 * ts + 4, openY);
+        sketchpad(2 * ts + 21, openY + 1);
+        laptop(6 * ts + 2, openY + 2);
+        studioDisplay(6 * ts + 18, openY - 2);
+        // Carla's small bicycle sculpture.
+        personalPropsG.circle(6 * ts + 44, openY + 10, 4).stroke({ color: 0xd58a58, width: 1.5 });
+        personalPropsG.circle(6 * ts + 54, openY + 10, 4).stroke({ color: 0xd58a58, width: 1.5 });
+        personalPropsG.moveTo(6 * ts + 44, openY + 10).lineTo(6 * ts + 49, openY + 3).lineTo(6 * ts + 54, openY + 10);
+        personalPropsG.moveTo(6 * ts + 49, openY + 3).lineTo(6 * ts + 53, openY + 3);
+        studioDisplay(10 * ts + 18, openY - 2);
+
+        // Liam's private office: dual monitors, a living paperwork stack, and
+        // the tiny wind-up hedgehog that scurries when the desk is clear.
+        const privateY = 2 * ts + 2;
+        studioDisplay(2 * ts + 2, privateY);
+        studioDisplay(2 * ts + 23, privateY);
+        paperPile(2 * ts + 2, privateY + 16, humanPaperCount);
+        const hedgehogX = 2 * ts + 42 + Math.round(Math.sin(t * 2.4) * (humanPaperCount ? 1 : 11));
+        personalPropsG.circle(hedgehogX, privateY + 20, 4).fill(0xc28c62).stroke({ color: 0x61483d, width: 1 });
+        personalPropsG.rect(hedgehogX - 1, privateY + 15, 2, 2).fill(0x61483d);
+        personalPropsG.circle(hedgehogX + 3, privateY + 19, 1).fill(0x1f1922);
+
+        // Recommission the room immediately right of the boardroom as Liam's
+        // small bedroom: bed, pillow, lamp, and a muted rug define it without
+        // sealing the walkable floor.
+        const bx = 19 * ts, by = 3 * ts;
+        personalPropsG.rect(bx + 3, by + 10, 38, 22).fill(0x6b5364).stroke({ color: 0x30283a, width: 2 });
+        personalPropsG.rect(bx + 7, by + 14, 30, 15).fill(0xb98c9d);
+        personalPropsG.rect(bx + 9, by + 15, 10, 7).fill(0xf3ead7);
+        personalPropsG.rect(bx + 26, by + 5, 7, 7).fill(0xd9b56f).stroke({ color: 0x6a533b, width: 1 });
+        personalPropsG.rect(bx - 3, by + 35, 50, 12).fill({ color: 0x8b7897, alpha: 0.45 });
+        personalPropsG.zIndex = (by + 48);
+      };
+      drawPersonalProps(0);
+
       // ─── Coffee delivery + desk screens, every frame ───────────────────────
       const updateDeskLife = (dt: number): void => {
+        deskLifeClock += dt;
+        const agents = useStore.getState().agents;
+        const waiting = agents.filter((a) => a.status === 'blocked' || a.status === 'success').length;
+        humanPaperCount = Math.min(5, askCount + waiting);
+        drawPersonalProps(deskLifeClock);
         for (const [id, rt] of runtimes) {
           // Park the carried coffee the moment its courier is seated at home —
           // then, if there's still nothing to do, get up and wander off (the
