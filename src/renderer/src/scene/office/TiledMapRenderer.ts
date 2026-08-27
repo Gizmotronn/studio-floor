@@ -198,6 +198,10 @@ export class TiledMapRenderer {
           for (let x = 0; x < this.width; x++) {
             const raw = layer.data[y * this.width + x];
             if (raw === 0) continue;
+            // Liam and Carla's open-plan desks use a laptop / studio display
+            // overlay supplied by Studio, so suppress the map's baked monitor
+            // tiles at those two desk positions.
+            if (layerName === 'furniture-above' && y === 11 && (x === 2 || x === 3 || x === 6 || x === 7)) continue;
 
             const flippedH = (raw & FLIPPED_H_FLAG) !== 0;
             const flippedV = (raw & FLIPPED_V_FLAG) !== 0;

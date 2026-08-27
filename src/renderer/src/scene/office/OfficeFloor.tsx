@@ -1168,7 +1168,7 @@ export function OfficeFloor() {
 
         // Open-plan row: Liam → Carla → Claudia, with deliberately different
         // tools on each desk. These are also visible when an agent is away.
-        const openY = 11 * ts + 3;
+        const openY = 10 * ts + 5;
         laptop(2 * ts + 4, openY);
         sketchpad(2 * ts + 21, openY + 1);
         laptop(6 * ts + 2, openY + 2);
@@ -1195,11 +1195,21 @@ export function OfficeFloor() {
         // small bedroom: bed, pillow, lamp, and a muted rug define it without
         // sealing the walkable floor.
         const bx = 19 * ts, by = 3 * ts;
-        personalPropsG.rect(bx + 3, by + 10, 38, 22).fill(0x6b5364).stroke({ color: 0x30283a, width: 2 });
-        personalPropsG.rect(bx + 7, by + 14, 30, 15).fill(0xb98c9d);
-        personalPropsG.rect(bx + 9, by + 15, 10, 7).fill(0xf3ead7);
+        // Close the former doorway with a solid wall panel. The bedroom remains
+        // a visual nook, but it no longer reads as an open passage from the floor.
+        personalPropsG.rect(bx - ts, by, ts + 2, 4 * ts).fill(0x30283a);
+        personalPropsG.rect(bx - ts + 2, by + 2, ts - 2, 4 * ts - 4).fill(0x839a8f);
+        // Bed: headboard, mattress, folded blanket, pillow, and two visible legs.
+        personalPropsG.rect(bx + 3, by + 9, 44, 30).fill(0x4d3b4b).stroke({ color: 0x30283a, width: 2 });
+        personalPropsG.rect(bx + 7, by + 14, 36, 20).fill(0xd8c0a4);
+        personalPropsG.rect(bx + 7, by + 14, 36, 7).fill(0xb87485);
+        personalPropsG.rect(bx + 10, by + 16, 12, 7).fill(0xf3ead7).stroke({ color: 0xb39b9a, width: 1 });
+        personalPropsG.rect(bx + 7, by + 34, 6, 4).fill(0x6a533b);
+        personalPropsG.rect(bx + 37, by + 34, 6, 4).fill(0x6a533b);
+        personalPropsG.rect(bx + 27, by + 21, 16, 13).fill(0xcaa7a2);
+        personalPropsG.rect(bx + 29, by + 23, 12, 9).fill(0xd7b8b0);
         personalPropsG.rect(bx + 26, by + 5, 7, 7).fill(0xd9b56f).stroke({ color: 0x6a533b, width: 1 });
-        personalPropsG.rect(bx - 3, by + 35, 50, 12).fill({ color: 0x8b7897, alpha: 0.45 });
+        personalPropsG.rect(bx - 3, by + 41, 50, 12).fill({ color: 0x8b7897, alpha: 0.45 });
         personalPropsG.zIndex = (by + 48);
       };
       drawPersonalProps(0);
