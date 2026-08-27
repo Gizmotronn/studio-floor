@@ -173,7 +173,9 @@ function sheetCellCanvas(
   if (maxX >= minX && maxY >= minY) {
     const contentW = maxX - minX + 1;
     const contentH = maxY - minY + 1;
-    const scale = Math.min((SCENE_W * 2) / contentW, (SCENE_H * 2) / contentH);
+    // Use one scale for every walk frame. Per-frame fit made step poses grow
+    // and shrink subtly, which read as a wobbly gait when the avatar moved.
+    const scale = Math.min((SCENE_W * 2) / 260, (SCENE_H * 2) / 440);
     const drawW = Math.max(1, Math.round(contentW * scale));
     const drawH = Math.max(1, Math.round(contentH * scale));
     outputCtx.drawImage(source, minX, minY, contentW, contentH, Math.round((SCENE_W * 2 - drawW) / 2), SCENE_H * 2 - drawH, drawW, drawH);
