@@ -1198,7 +1198,7 @@ export function OfficeFloor() {
         const social = agents.filter((a) => a.isGod || a.name === 'Carla');
         for (const agent of social) {
           const rt = runtimes.get(agent.id);
-          if (!rt || (agent.status !== 'idle' && agent.status !== 'success') || rt.brk || rt.err || rt.run || rt.visitingBoss) continue;
+          if (!rt || ((!personal && agent.status !== 'idle' && agent.status !== 'success')) || rt.brk || rt.err || rt.run || rt.visitingBoss) continue;
           const targetRoom: 'boardroom' | 'bedroom' | undefined = personal || evening
             ? 'bedroom'
             : (!executivePresent ? 'boardroom' : undefined);
@@ -1802,6 +1802,17 @@ export function OfficeFloor() {
 
         const c = rt.character;
         c.setBaseAlpha(agent.status === 'ghost' ? 0.5 : 1);
+
+        // Personal time is an explicit override: pull Liam and Carla out of
+        // active desk choreography and route them to the bedroom immediately.
+        if (useStore.getState().personalMode && (agent.isGod || agent.name === 'Carla')) {
+          if (rt.socialRoom !== 'bedroom') {
+            rt.socialRoom = 'bedroom';
+            c.walkToAndThen(bedroomHangout, () => c.sitInPlace('up'));
+          }
+          c.showThought('personal time');
+          return;
+        }
 
         if (rt.visitingBoss && agent.status !== 'idle') {
           rt.visitingBoss = false;

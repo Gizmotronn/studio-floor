@@ -7,6 +7,7 @@ import { OfficeFloor } from '@/scene/office/OfficeFloor';
 import { useHive } from '@/hooks/useHive';
 import { MemoryPanel } from '@/components/MemoryPanel';
 import { AgentDetailPanel } from '@/components/AgentDetailPanel';
+import { PersonalChatPanel } from '@/components/PersonalChatPanel';
 import { AgentStrip } from '@/components/AgentStrip';
 import { AddAgentModal } from '@/components/AddAgentModal';
 import { MichaelBooting } from '@/components/MichaelBooting';
@@ -36,6 +37,7 @@ declare const __APP_VERSION__: string;
 export function App() {
   const boardWindow = new URLSearchParams(window.location.search).get('view') === 'board';
   const agent = useStore(selectedAgent);
+  const personalMode = useStore((s) => s.personalMode);
   const agents = useStore(s => s.agents);
   const agentCount = agents.length;
   const addAgentOpen = useStore(s => s.addAgentOpen);
@@ -428,7 +430,7 @@ export function App() {
           width: sidebarWidth, flexShrink: 0,
           minHeight: 0, display: 'flex', flexDirection: 'column'
         }}>
-          {agent ? (
+          {personalMode ? <PersonalChatPanel /> : agent ? (
             <AgentDetailPanel agent={agent} />
           ) : godStatus === 'booting' ? (
             <PixelPanel variant="default" noPadding style={{
