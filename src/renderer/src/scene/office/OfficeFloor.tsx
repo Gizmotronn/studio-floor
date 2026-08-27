@@ -75,6 +75,8 @@ interface Runtime {
   idleHome?: Tile;
   visitingBoss?: boolean;
   visitTimer?: number;
+  publicDesk?: boolean;
+  publicDeskTimer?: number;
 }
 
 /** Only a busy stretch at least this long earns a cheer on finishing. Short
@@ -137,6 +139,38 @@ function loadTexture(url: string): Promise<Texture> {
     img.onerror = () => reject(new Error('failed to load ' + url.slice(0, 40)));
     img.src = url;
   });
+}
+
+/** Small, local voice palette for floor role-play. This deliberately uses the
+ * device's built-in SpeechSynthesis voices rather than an API key: each agent
+ * gets a stable delivery profile (language, rate, and pitch), while the text
+ * agents continue to run through their existing Claude/Codex subscriptions. */
+const SOCIAL_VOICES: Record<string, { lang: string; rate: number; pitch: number }> = {
+  carla: { lang: 'de-DE', rate: 1.02, pitch: 1.08 },
+  nick: { lang: 'en-GB', rate: 0.94, pitch: 0.88 },
+  engineer: { lang: 'en-AU', rate: 1.02, pitch: 0.98 },
+  bjorn: { lang: 'en-GB', rate: 0.88, pitch: 0.82 },
+  mike: { lang: 'en-AU', rate: 0.84, pitch: 0.76 },
+  andrew: { lang: 'en-GB', rate: 0.9, pitch: 0.92 },
+  rob: { lang: 'en-AU', rate: 0.98, pitch: 0.9 },
+  claudia: { lang: 'en-GB', rate: 1.08, pitch: 1.12 },
+};
+
+function speakFloorLine(character: string, text: string): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text.trim()) return;
+  const profile = SOCIAL_VOICES[character] ?? SOCIAL_VOICES.engineer;
+  const utterance = new SpeechSynthesisUtterance(text.replace(/[📌☕🌿🚀✔😤🥺💪]/gu, '').trim());
+  utterance.rate = profile.rate;
+  utterance.pitch = profile.pitch;
+  utterance.lang = profile.lang;
+  const voices = window.speechSynthesis.getVoices();
+  utterance.voice = voices.find((v) => v.lang.toLowerCase() === profile.lang.toLowerCase())
+    ?? voices.find((v) => v.lang.toLowerCase().startsWith(profile.lang.slice(0, 2).toLowerCase()))
+    ?? null;
+  // Keep floor chatter lightweight: an existing line finishes naturally, but
+  // a backlog never grows beyond one queued utterance per social beat.
+  if (window.speechSynthesis.speaking) return;
+  window.speechSynthesis.speak(utterance);
 }
 
 /** What the agent is doing right now, for the thought cloud. Prefer the live
@@ -368,6 +402,8 @@ export function OfficeFloor() {
         for (const ch of agent.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
         return boardroomIdleTiles[hash % boardroomIdleTiles.length];
       };
+      const liamPublicDesk = mapRenderer.getSpawnPoint('pc-1') ?? { x: 2, y: 13 };
+      let liamPublicCooldown = 55;
       // The bottom-right open area is the cafeteria (break room) — see the
       // coffee-break director below. It is deliberately NOT added as overflow
       // desk seating, so the café tables stay free for breaks.
@@ -647,10 +683,14 @@ export function OfficeFloor() {
         // the proximity director below).
         const p = rt.character.getPixelPosition();
         if (godDistance(p.x, p.y) > 96 && Math.random() < 0.35) {
-          rt.character.showThought(GOSSIP_LINES[Math.floor(Math.random() * GOSSIP_LINES.length)]);
+          const line = GOSSIP_LINES[Math.floor(Math.random() * GOSSIP_LINES.length)];
+          rt.character.showThought(line);
+          speakFloorLine(character, line);
           return;
         }
-        rt.character.showThought(pickSoloLine(character, spot.spot, seed));
+        const line = pickSoloLine(character, spot.spot, seed);
+        rt.character.showThought(line);
+        speakFloorLine(character, line);
       };
 
       // If the newcomer's table-mate is already lingering (and neither is mid-
@@ -780,7 +820,9 @@ export function OfficeFloor() {
             if (b.chat.beat <= 0) {
               if (b.chat.idx < b.chat.lines.length) {
                 const speaker = (b.chat.idx % 2 === 0) ? rt : runtimes.get(b.chat.partnerId);
-                speaker?.character.showThought(b.chat.lines[b.chat.idx]);
+                const line = b.chat.lines[b.chat.idx];
+                speaker?.character.showThought(line);
+                if (speaker) speakFloorLine(agentById(speaker.character.agentId)?.character ?? DEFAULT_CHARACTER, line);
                 b.chat.idx++;
                 b.chat.beat = 2.4;                // seconds per line
                 b.timer = Math.max(b.timer, 3.5); // keep both around to finish
@@ -842,13 +884,16 @@ export function OfficeFloor() {
         const target = brt.character.getDeskTile();
         crt.visitingBoss = true;
         crt.visitTimer = 0;
-        crt.character.showThought('dropping by to catch up with Liam');
+          crt.character.showThought('dropping by to catch up with Liam');
+          speakFloorLine(crt.charName, 'Dropping by to catch up with Liam.');
         crt.character.walkToAndThen({ x: target.x + 1, y: target.y + 1 }, () => {
           if (!crt.visitingBoss) return;
           crt.character.setIdle();
           crt.character.faceDirection('left');
           crt.visitTimer = 7;
-          crt.character.showThought(Math.random() < 0.5 ? 'good to see you — shall we talk?' : 'I have a thought for you, Liam');
+          const line = Math.random() < 0.5 ? 'good to see you — shall we talk?' : 'I have a thought for you, Liam';
+          crt.character.showThought(line);
+          speakFloorLine(crt.charName, line);
         });
       };
 
@@ -1049,6 +1094,38 @@ export function OfficeFloor() {
           rt.character.showThought(line);
           rt.character.hideThought(); // linger briefly, then fade
         }
+      };
+
+      // Liam has a private office, but he is not permanently isolated from the
+      // team. When the floor is calm he occasionally walks to the public desk
+      // beside Carla, works there for a short stretch, then returns upstairs.
+      const updateLiamPublicDesk = (dt: number): void => {
+        const liam = useStore.getState().agents.find((a) => a.isGod);
+        const rt = liam ? runtimes.get(liam.id) : undefined;
+        if (!liam || !rt || liam.status !== 'idle' || rt.brk || rt.err || rt.run || rt.visitingBoss) return;
+        if (rt.publicDesk) {
+          rt.publicDeskTimer = (rt.publicDeskTimer ?? 24) - dt;
+          if (rt.publicDeskTimer <= 0) {
+            rt.publicDesk = false;
+            rt.publicDeskTimer = undefined;
+            rt.character.walkToAndThen(rt.character.getDeskTile(), () => {
+              rt.character.sitAtDesk(false);
+              rt.character.showThought('back in my office');
+            });
+          }
+          return;
+        }
+        liamPublicCooldown -= dt;
+        if (liamPublicCooldown > 0 || Math.random() >= 0.02) return;
+        liamPublicCooldown = 80 + Math.random() * 80;
+        rt.publicDesk = true;
+        rt.publicDeskTimer = 18 + Math.random() * 18;
+        rt.character.showThought('working alongside the team');
+        speakFloorLine('engineer', 'I am working alongside the team.');
+        rt.character.walkToAndThen(liamPublicDesk, () => {
+          if (!rt.publicDesk) return;
+          rt.character.sitInPlace('up');
+        });
       };
 
       // Personal desk props are deliberately drawn as a small overlay instead
@@ -1687,7 +1764,10 @@ export function OfficeFloor() {
             break;
           case 'success':
             c.setStatusGlyph('success');
-            if (agent.isGod) { c.hideThought(); c.sitAtDesk(true); break; }
+            if (agent.isGod) {
+              if (rt.publicDesk) { c.hideThought(); c.sitInPlace('up'); break; }
+              c.hideThought(); c.sitAtDesk(true); break;
+            }
             c.startWandering();
             if (finishedWork) {
               c.cheer();
@@ -1705,7 +1785,10 @@ export function OfficeFloor() {
           default:
             c.setStatusGlyph('none');
             // The god runs the floor from its desk; everyone else wanders when idle.
-            if (agent.isGod) { c.sitAtDesk(true); c.showThought(liveActivity(agent, 'running the floor')); }
+            if (agent.isGod) {
+              if (rt.publicDesk) { c.sitInPlace('up'); c.showThought('working alongside the team'); break; }
+              c.sitAtDesk(true); c.showThought(liveActivity(agent, 'running the floor'));
+            }
             else if (finishedWork) {
               // Task done → a quick cheer on the spot, then back to roaming.
               c.startWandering();
@@ -1837,6 +1920,7 @@ export function OfficeFloor() {
         }
         updateCafeteria(dt);
         updateCarlaVisit(dt);
+        updateLiamPublicDesk(dt);
         for (const rt of runtimes.values()) {
           if (!rt.visitingBoss || rt.visitTimer === undefined) continue;
           rt.visitTimer -= dt;
