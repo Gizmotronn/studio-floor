@@ -71,6 +71,10 @@ interface Runtime {
   run?: CoffeeRun;
   /** When the current busy stretch (working/thinking/compacting) began. */
   busySince?: number;
+  /** Preferred social destination while idle (boardroom/advisor grouping). */
+  idleHome?: Tile;
+  visitingBoss?: boolean;
+  visitTimer?: number;
 }
 
 /** Only a busy stretch at least this long earns a cheer on finishing. Short
@@ -346,6 +350,24 @@ export function OfficeFloor() {
         }
       };
       addZoneSeats('boardroom');       // conference room overflow
+      const boardroomIdleTiles: Tile[] = [];
+      const boardroomZone = mapRenderer.getZone('boardroom');
+      if (boardroomZone) {
+        for (let y = boardroomZone.y; y < boardroomZone.y + boardroomZone.height; y++) {
+          for (let x = boardroomZone.x; x < boardroomZone.x + boardroomZone.width; x++) {
+            if (mapRenderer.isWalkable(x, y)) boardroomIdleTiles.push({ x, y });
+          }
+        }
+      }
+      const idleHomeFor = (agent: Agent): Tile | undefined => {
+        const text = `${agent.name} ${agent.description}`.toLowerCase();
+        const isAdvisor = agent.name !== 'Carla' && (agent.name !== 'Claudia')
+          && (agent.isGod || /ceo|executive|advisor|research|scientist/.test(text));
+        if (!isAdvisor || boardroomIdleTiles.length === 0) return undefined;
+        let hash = 0;
+        for (const ch of agent.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+        return boardroomIdleTiles[hash % boardroomIdleTiles.length];
+      };
       // The bottom-right open area is the cafeteria (break room) — see the
       // coffee-break director below. It is deliberately NOT added as overflow
       // desk seating, so the café tables stay free for breaks.
@@ -783,8 +805,37 @@ export function OfficeFloor() {
           if (rt && breakEligible(agent, rt)) candidates.push([agent, rt]);
         }
         if (candidates.length === 0) return;
-        const [agent, rt] = candidates[Math.floor(Math.random() * candidates.length)];
+        // Rob and Claudia are intentionally given a gentle preference for the
+        // same break-room table: they remain part of the shared floor, but their
+        // existing friendship shows up as a recurring social pairing.
+        const socialPair = candidates.filter(([a]) => a.name === 'Rob' || a.name === 'Claudia');
+        const [agent, rt] = socialPair.length && Math.random() < 0.65
+          ? socialPair[Math.floor(Math.random() * socialPair.length)]
+          : candidates[Math.floor(Math.random() * candidates.length)];
         startBreak(agent.id, rt);
+      };
+
+      let carlaVisitCooldown = 42 + Math.random() * 38;
+      const updateCarlaVisit = (dt: number): void => {
+        carlaVisitCooldown -= dt;
+        if (carlaVisitCooldown > 0) return;
+        carlaVisitCooldown = 90 + Math.random() * 90;
+        const carla = useStore.getState().agents.find((a) => a.name === 'Carla' || a.character === 'carla');
+        const boss = useStore.getState().agents.find((a) => a.isGod);
+        const crt = carla ? runtimes.get(carla.id) : undefined;
+        const brt = boss ? runtimes.get(boss.id) : undefined;
+        if (!carla || !crt || !brt || carla.status !== 'idle' || crt.brk || crt.err || crt.run || crt.visitingBoss) return;
+        const target = brt.character.getDeskTile();
+        crt.visitingBoss = true;
+        crt.visitTimer = 0;
+        crt.character.showThought('dropping by to catch up with Liam');
+        crt.character.walkToAndThen({ x: target.x + 1, y: target.y + 1 }, () => {
+          if (!crt.visitingBoss) return;
+          crt.character.setIdle();
+          crt.character.faceDirection('left');
+          crt.visitTimer = 7;
+          crt.character.showThought(Math.random() < 0.5 ? 'good to see you — shall we talk?' : 'I have a thought for you, Liam');
+        });
       };
 
       // ─── Idle errands: small purposeful busywork for a quiet floor ─────────
@@ -1398,7 +1449,7 @@ export function OfficeFloor() {
           onClick: (id) => useStore.getState().select(id),
         });
         character.show(charLayer);
-        const rt: Runtime = { character, seatIndex, waitTile, charName };
+        const rt: Runtime = { character, seatIndex, waitTile, charName, idleHome: idleHomeFor(agent) };
         // Standard desks paint the 2×2 PC monitor two rows above the seat —
         // give those a DeskScreen (lights up while seated) and a cup spot
         // beside the monitor, exactly where the tileset's baked-in mug used
@@ -1466,6 +1517,11 @@ export function OfficeFloor() {
 
         const c = rt.character;
         c.setBaseAlpha(agent.status === 'ghost' ? 0.5 : 1);
+
+        if (rt.visitingBoss && agent.status !== 'idle') {
+          rt.visitingBoss = false;
+          rt.visitTimer = undefined;
+        }
 
         // While an agent is on a coffee break the director owns its avatar — a
         // mere idle/success refresh must not yank it back to wandering. Any
@@ -1561,7 +1617,10 @@ export function OfficeFloor() {
               c.cheer();
               c.showThought(CHEER_LINES[Math.floor(Math.random() * CHEER_LINES.length)]);
             }
-            else { c.startWandering(); c.showThought(liveActivity(agent, 'idle')); }
+            else if (rt.idleHome) {
+              c.walkToAndThen(rt.idleHome, () => { c.setIdle(); c.faceDirection('up'); });
+              c.showThought(liveActivity(agent, 'in the boardroom'));
+            } else { c.startWandering(); c.showThought(liveActivity(agent, 'idle')); }
             break;
         }
       };
@@ -1682,6 +1741,17 @@ export function OfficeFloor() {
           rt.character.update(dt);
         }
         updateCafeteria(dt);
+        updateCarlaVisit(dt);
+        for (const rt of runtimes.values()) {
+          if (!rt.visitingBoss || rt.visitTimer === undefined) continue;
+          rt.visitTimer -= dt;
+          if (rt.visitTimer <= 0) {
+            rt.visitingBoss = false;
+            rt.visitTimer = undefined;
+            rt.character.hideThought();
+            rt.character.startWandering();
+          }
+        }
         updateCoffeeRuns(dt);
         updateErrands(dt);
         updateBossAura(dt);
