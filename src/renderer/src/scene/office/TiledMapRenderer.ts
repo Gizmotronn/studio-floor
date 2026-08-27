@@ -112,7 +112,9 @@ export class TiledMapRenderer {
       if (bottom >= 0 && bottom < this.height) this.walkabilityGrid[bottom][x] = false;
     }
     for (let y = top; y <= bottom; y++) {
-      if (left >= 0 && left < this.width) this.walkabilityGrid[y][left] = false;
+      // One controlled doorway remains at the midpoint for Liam/Carla's
+      // evening routine; ordinary wandering never targets the bedroom.
+      if (left >= 0 && left < this.width && y !== 5) this.walkabilityGrid[y][left] = false;
       if (right >= 0 && right < this.width) this.walkabilityGrid[y][right] = false;
     }
   }

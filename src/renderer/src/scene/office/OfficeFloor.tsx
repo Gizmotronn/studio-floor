@@ -77,6 +77,7 @@ interface Runtime {
   visitTimer?: number;
   publicDesk?: boolean;
   publicDeskTimer?: number;
+  socialRoom?: 'boardroom' | 'bedroom';
 }
 
 /** Only a busy stretch at least this long earns a cheer on finishing. Short
@@ -404,6 +405,13 @@ export function OfficeFloor() {
       };
       const liamPublicDesk = mapRenderer.getSpawnPoint('pc-2') ?? { x: 6, y: 13 };
       let liamPublicCooldown = 55;
+      const bedroomHangout = { x: 21, y: 5 };
+      let boardroomSocialClock = 6;
+      const isExecutive = (agent: Agent): boolean => {
+        const text = `${agent.name} ${agent.description}`.toLowerCase();
+        return agent.name !== 'Carla' && agent.name !== 'Claudia'
+          && /ceo|executive|advisor|research|scientist/.test(text);
+      };
       // The bottom-right open area is the cafeteria (break room) — see the
       // coffee-break director below. It is deliberately NOT added as overflow
       // desk seating, so the café tables stay free for breaks.
@@ -1130,6 +1138,49 @@ export function OfficeFloor() {
         });
       };
 
+      // Room choreography: Carla and Liam use the boardroom as a shared,
+      // non-work social space while it is free. Executives/advisors take
+      // precedence there, so Carla steps out rather than competing for it.
+      // After 19:00 the pair retreat to the bedroom instead.
+      const updateSocialRooms = (dt: number): void => {
+        const now = new Date();
+        const evening = now.getHours() >= 19;
+        const agents = useStore.getState().agents;
+        const executivePresent = agents.some((a) => isExecutive(a) && (a.status === 'idle' || a.status === 'success'));
+        const social = agents.filter((a) => a.isGod || a.name === 'Carla');
+        for (const agent of social) {
+          const rt = runtimes.get(agent.id);
+          if (!rt || (agent.status !== 'idle' && agent.status !== 'success') || rt.brk || rt.err || rt.run || rt.visitingBoss) continue;
+          const targetRoom: 'boardroom' | 'bedroom' | undefined = evening
+            ? 'bedroom'
+            : (!executivePresent ? 'boardroom' : undefined);
+          if (!targetRoom) {
+            if (rt.socialRoom === 'boardroom') { rt.socialRoom = undefined; rt.character.startWandering(); }
+            continue;
+          }
+          if (rt.socialRoom === targetRoom) continue;
+          rt.socialRoom = targetRoom;
+          const target = targetRoom === 'bedroom'
+            ? bedroomHangout
+            : boardroomIdleTiles[Math.max(0, agent.name === 'Carla' ? 0 : 1) % Math.max(1, boardroomIdleTiles.length)];
+          if (!target) continue;
+          rt.character.showThought(targetRoom === 'bedroom' ? 'winding down together' : 'catching up in the boardroom');
+          rt.character.walkToAndThen(target, () => rt.character.sitInPlace('up'));
+        }
+
+        // A boardroom can hold a group conversation. Rotate a short exchange
+        // across everyone currently assigned to that room, not just a pair.
+        boardroomSocialClock -= dt;
+        if (boardroomSocialClock > 0 || evening || !executivePresent) return;
+        boardroomSocialClock = 7 + Math.random() * 5;
+        const occupants = agents.filter((a) => isExecutive(a) && (a.status === 'idle' || a.status === 'success'))
+          .map((a) => runtimes.get(a.id)).filter((r): r is Runtime => !!r && r.socialRoom !== 'bedroom');
+        if (occupants.length < 2) return;
+        const lines = ['let’s pressure-test the trade-offs.', 'what does this mean for the people doing the work?', 'impact and execution need to stay joined up.', 'good discussion — let’s leave with a clear decision.'];
+        const line = lines[Math.floor(Math.random() * lines.length)];
+        for (const rt of occupants.slice(0, 4)) rt.character.showThought(line);
+      };
+
       // Personal desk props are deliberately drawn as a small overlay instead
       // of baking them into the map. That keeps the floor layout swappable and
       // lets the human-facing details react to live work (paperwork and the
@@ -1202,6 +1253,7 @@ export function OfficeFloor() {
         personalPropsG.rect(bx - ts, by + 7 * ts, 8 * ts, 2).fill(0x30283a);
         personalPropsG.rect(bx - ts, by, 2, 7 * ts).fill(0x30283a);
         personalPropsG.rect(bx + 7 * ts - 2, by, 2, 7 * ts).fill(0x30283a);
+        personalPropsG.rect(bx - ts, by + 3 * ts, ts + 2, ts).fill(0x839a8f); // controlled door
         // Bed: headboard, mattress, folded blanket, pillow, and two visible legs.
         personalPropsG.rect(bx + 3, by + 9, 44, 30).fill(0x4d3b4b).stroke({ color: 0x30283a, width: 2 });
         personalPropsG.rect(bx + 7, by + 14, 36, 20).fill(0xd8c0a4);
@@ -1738,6 +1790,13 @@ export function OfficeFloor() {
           releaseRun(rt);
         }
 
+        // Social-room choreography owns relaxed avatars until the room director
+        // moves them out or real work arrives.
+        if (rt.socialRoom && (agent.status === 'idle' || agent.status === 'success')) {
+          c.setStatusGlyph(agent.status === 'success' ? 'success' : 'none');
+          return;
+        }
+
         // A thought cloud above the head shows what the agent is doing RIGHT NOW
         // (its live `action`, e.g. "edit App.tsx"). Working → sit at the desk;
         // blocked → walk to the door and flash "!"; done/idle → wander.
@@ -1934,6 +1993,7 @@ export function OfficeFloor() {
         updateCafeteria(dt);
         updateCarlaVisit(dt);
         updateLiamPublicDesk(dt);
+        updateSocialRooms(dt);
         for (const rt of runtimes.values()) {
           if (!rt.visitingBoss || rt.visitTimer === undefined) continue;
           rt.visitTimer -= dt;
