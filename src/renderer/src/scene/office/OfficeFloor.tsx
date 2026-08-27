@@ -4,6 +4,7 @@ import { Application, Container, Graphics, Ticker, Texture } from 'pixi.js';
 import 'pixi.js/unsafe-eval';
 import { useStore, type Agent } from '@/store/store';
 import { BoardMeetingModal } from '@/components/BoardMeetingModal';
+import { PersonalChatModal } from '@/components/PersonalChatModal';
 import { TiledMapRenderer } from './TiledMapRenderer';
 import { Camera } from './Camera';
 import { Character, paintCup } from './Character';
@@ -209,6 +210,10 @@ export function OfficeFloor() {
   const officeTheme = useStore((s) => s.officeTheme);
   const boardMeeting = useStore((s) => s.boardMeeting);
   const [boardMeetingOpen, setBoardMeetingOpen] = useState(false);
+  const personalMode = useStore((s) => s.personalMode);
+  const setPersonalMode = useStore((s) => s.setPersonalMode);
+  const endBoardMeeting = useStore((s) => s.endBoardMeeting);
+  const [personalChatOpen, setPersonalChatOpen] = useState(false);
 
   // Is the floor actually on screen? A fullscreen terminal or file editor covers
   // it completely, and a hidden window shows nothing at all — but the Pixi ticker
@@ -1187,13 +1192,14 @@ export function OfficeFloor() {
         if (useStore.getState().boardMeeting?.active) return;
         const now = new Date();
         const evening = now.getHours() >= 19;
+        const personal = useStore.getState().personalMode;
         const agents = useStore.getState().agents;
         const executivePresent = agents.some((a) => isExecutive(a) && (a.status === 'idle' || a.status === 'success'));
         const social = agents.filter((a) => a.isGod || a.name === 'Carla');
         for (const agent of social) {
           const rt = runtimes.get(agent.id);
           if (!rt || (agent.status !== 'idle' && agent.status !== 'success') || rt.brk || rt.err || rt.run || rt.visitingBoss) continue;
-          const targetRoom: 'boardroom' | 'bedroom' | undefined = evening
+          const targetRoom: 'boardroom' | 'bedroom' | undefined = personal || evening
             ? 'bedroom'
             : (!executivePresent ? 'boardroom' : undefined);
           if (!targetRoom) {
@@ -2108,10 +2114,13 @@ export function OfficeFloor() {
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={hostRef} style={{ width: '100%', height: '100%', boxShadow: 'var(--cth-panel-border)', overflow: 'hidden', imageRendering: 'pixelated', background: hex(colors.ink[900]) }} />
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+        {personalMode && <span style={{ padding: '7px 10px', background: 'rgba(75,52,70,.94)', color: '#f7d9f0', fontFamily: 'var(--cth-font-display)', fontSize: 10 }}>PERSONAL TIME</span>}
+        <button type="button" onClick={() => { endBoardMeeting(); setPersonalMode(!personalMode); setPersonalChatOpen(!personalMode); }} style={{ padding: '9px 12px', border: '2px solid var(--cth-ink-900)', background: personalMode ? 'var(--cth-mint)' : 'var(--cth-paper-100)', color: 'var(--cth-ink-900)', fontFamily: 'var(--cth-font-display)', fontSize: 10, cursor: 'pointer', boxShadow: '3px 3px 0 rgba(0,0,0,.22)' }}>{personalMode ? 'OPEN PERSONAL CHAT' : 'PERSONAL TIME'}</button>
         {boardMeeting?.active && <span style={{ padding: '7px 10px', background: 'rgba(35,55,48,.92)', color: '#d8f4e2', fontFamily: 'var(--cth-font-display)', fontSize: 10 }}>BOARDROOM LOCKED</span>}
         <button type="button" onClick={() => setBoardMeetingOpen(true)} style={{ padding: '9px 12px', border: '2px solid var(--cth-ink-900)', background: boardMeeting?.active ? 'var(--cth-mint)' : 'var(--cth-paper-100)', color: 'var(--cth-ink-900)', fontFamily: 'var(--cth-font-display)', fontSize: 10, cursor: 'pointer', boxShadow: '3px 3px 0 rgba(0,0,0,.22)' }}>{boardMeeting?.active ? 'OPEN BOARD CHAT' : 'CALL BOARD MEETING'}</button>
       </div>
       {boardMeetingOpen && <BoardMeetingModal onClose={() => setBoardMeetingOpen(false)} />}
+      {personalChatOpen && <PersonalChatModal onClose={() => setPersonalChatOpen(false)} />}
     </div>
   );
 }
