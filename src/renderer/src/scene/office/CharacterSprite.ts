@@ -50,7 +50,11 @@ export class CharacterSprite {
     this.frameH = this.sprite.texture.frame.height || this.sprite.height || 32;
 
     this.container.addChild(this.sprite);
-    this.container.scale.set(CHAR_SCALE);
+    // Custom avatar sheets retain a 2× frame (36×64) so their supplied detail
+    // survives the floor renderer. Scale those frames down to the same physical
+    // footprint as the procedural 18×32 fallback sprites.
+    const frameScale = this.frameW >= 30 || this.frameH >= 48 ? CHAR_SCALE / 2 : CHAR_SCALE;
+    this.container.scale.set(frameScale);
   }
 
   /**

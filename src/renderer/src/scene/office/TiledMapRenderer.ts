@@ -202,6 +202,11 @@ export class TiledMapRenderer {
             // overlay supplied by Studio, so suppress the map's baked monitor
             // tiles at those two desk positions.
             if (layerName === 'furniture-above' && y === 11 && (x === 2 || x === 3 || x === 6 || x === 7)) continue;
+            // The former executive/architect room is now Liam's bedroom. Clear
+            // its map-baked desks and cabinets so the authored bed is the only
+            // furniture visible there.
+            if ((layerName === 'furniture-above' || layerName === 'furniture-below')
+              && x >= 18 && x <= 33 && y >= 3 && y <= 8) continue;
 
             const flippedH = (raw & FLIPPED_H_FLAG) !== 0;
             const flippedV = (raw & FLIPPED_V_FLAG) !== 0;

@@ -162,18 +162,21 @@ function sheetCellCanvas(
     }
   }
 
+  // Keep the source artwork at 2× resolution. CharacterSprite scales these
+  // frames back to the same world size, so faces and clothing retain the detail
+  // from the supplied headshots instead of being crushed into 18×32 pixels.
   const output = document.createElement('canvas');
-  output.width = SCENE_W;
-  output.height = SCENE_H;
+  output.width = SCENE_W * 2;
+  output.height = SCENE_H * 2;
   const outputCtx = output.getContext('2d')!;
   outputCtx.imageSmoothingEnabled = false;
   if (maxX >= minX && maxY >= minY) {
     const contentW = maxX - minX + 1;
     const contentH = maxY - minY + 1;
-    const scale = Math.min(SCENE_W / contentW, SCENE_H / contentH);
+    const scale = Math.min((SCENE_W * 2) / contentW, (SCENE_H * 2) / contentH);
     const drawW = Math.max(1, Math.round(contentW * scale));
     const drawH = Math.max(1, Math.round(contentH * scale));
-    outputCtx.drawImage(source, minX, minY, contentW, contentH, Math.round((SCENE_W - drawW) / 2), SCENE_H - drawH, drawW, drawH);
+    outputCtx.drawImage(source, minX, minY, contentW, contentH, Math.round((SCENE_W * 2 - drawW) / 2), SCENE_H * 2 - drawH, drawW, drawH);
   }
   return output;
 }
@@ -186,7 +189,7 @@ function sheetCellTexture(
 ): Texture {
   const output = sheetCellCanvas(image, col, row, removeLightCheckerboard);
   const texture = Texture.from(output);
-  texture.source.scaleMode = 'nearest';
+  texture.source.scaleMode = 'linear';
   return texture;
 }
 
