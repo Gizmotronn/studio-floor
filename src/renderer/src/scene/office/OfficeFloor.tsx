@@ -429,7 +429,10 @@ export function OfficeFloor() {
       const updateBoardMeeting = (): void => {
         const meeting = useStore.getState().boardMeeting;
         const active = !!meeting?.active;
-        mapRenderer.setWalkable(boardroomDoor.x, boardroomDoor.y, !active);
+        // Keep the entrance open while attendees are walking in; locking it on
+        // the first frame made the pathfinder strand everyone outside.
+        const gathering = active && !!meeting && Date.now() - meeting.startedAt < 12000;
+        mapRenderer.setWalkable(boardroomDoor.x, boardroomDoor.y, !active || gathering);
         if (!active) {
           if (boardMeetingWasActive) {
             for (const rt of runtimes.values()) {
