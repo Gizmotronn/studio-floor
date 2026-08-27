@@ -2255,9 +2255,9 @@ function createWindow(opts: { floor?: boolean; board?: boolean } = {}): BrowserW
 
   // Permission gate for the renderer (our own trusted, local content). The only
   // permission we constrain is microphone capture: it's allowed ONLY while a mic
-  // feature is actually live — Free Flow dictation (`freeflowEnabled`) OR a
-  // Realtime Michael voice session (`realtimeVoiceEnabled`, flipped on by the
-  // session at start() before getUserMedia, off at stop()). With both flags off,
+  // feature is actually live — an active voice session or an in-progress
+  // Free Flow capture (both flip realtimeVoiceEnabled only while capturing).
+  // With the flag off,
   // there's zero mic access even at the Electron layer. We deliberately do NOT
   // gate on OpenAI-key presence: that key (`apikey:openai`) is shared with the CLI
   // engines, so a CLI-only user must not have the mic gate opened. Every other
@@ -2265,7 +2265,7 @@ function createWindow(opts: { floor?: boolean; board?: boolean } = {}): BrowserW
   // xterm/editor copy must keep working).
   const micFeatureLive = (): boolean => {
     const cfg = readConfig();
-    return cfg.freeflowEnabled === true || cfg.realtimeVoiceEnabled === true;
+    return cfg.realtimeVoiceEnabled === true;
   };
   const ses = win.webContents.session;
   ses.setPermissionRequestHandler((_wc, permission, callback, details) => {

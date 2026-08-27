@@ -97,10 +97,15 @@ async function start(agentId: string): Promise<void> {
   wantActive = true;
   opening = true;
   setState({ error: null });
+  // Open the main-process permission gate only for the active capture. Keeping
+  // this separate from the feature toggle prevents a microphone prompt on app
+  // launch when Free Flow is enabled but idle.
+  try { await window.cth.updateConfig({ realtimeVoiceEnabled: true }); } catch { /* getUserMedia reports the denial */ }
   let opened: MediaStream;
   try {
     opened = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (e) {
+    void window.cth.updateConfig({ realtimeVoiceEnabled: false });
     opening = false;
     wantActive = false;
     const name = e instanceof DOMException ? e.name : '';
@@ -114,6 +119,7 @@ async function start(agentId: string): Promise<void> {
   // Released before the mic finished opening (a quick tap) — discard cleanly.
   if (!wantActive) {
     try { opened.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+    void window.cth.updateConfig({ realtimeVoiceEnabled: false });
     return;
   }
   stream = opened;
@@ -123,6 +129,7 @@ async function start(agentId: string): Promise<void> {
     recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
   } catch {
     teardownStream();
+    void window.cth.updateConfig({ realtimeVoiceEnabled: false });
     wantActive = false;
     setState({ status: 'idle', error: 'recording not supported' });
     return;
@@ -146,6 +153,7 @@ function stop(): void {
 async function finish(agentId: string): Promise<void> {
   const type = recorder?.mimeType || 'audio/webm';
   teardownStream();
+  void window.cth.updateConfig({ realtimeVoiceEnabled: false });
   recorder = null;
   const blob = new Blob(chunks, { type });
   chunks = [];
