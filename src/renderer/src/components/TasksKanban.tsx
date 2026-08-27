@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import { PixelPanel } from './PixelPanel';
 import { PixelButton } from './PixelButton';
 import { PixelBadge } from './PixelBadge';
@@ -140,6 +140,16 @@ export function TasksKanban() {
     } catch { /* keep last good; the next poll re-syncs from disk */ }
   }, [refresh]);
 
+  const onLinearDrop = useCallback(async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData('application/x-linear-ticket') || e.dataTransfer.getData('text/plain');
+    if (!raw.startsWith('LINEAR:')) return;
+    const ticket = raw.slice(7).trim();
+    if (!ticket) return;
+    await window.cth.hiveSend({ to: 'god', act: 'request', subject: 'Linear ticket for Kanban', body: `Add this Linear ticket to the kanban and preserve its key, title, URL, and acceptance context:\n\n${ticket}` }, 'human');
+    void refresh();
+  }, [refresh]);
+
   useEffect(() => {
     refresh();
     timer.current = setInterval(refresh, POLL_MS);
@@ -182,9 +192,9 @@ export function TasksKanban() {
           const cards = tasks.filter((t) => t.status === col.key);
           return (
             <div key={col.key} style={{
-              flex: '1 1 0', minWidth: 170, display: 'flex', flexDirection: 'column',
+              flex: '1 1 0', minWidth: 220, display: 'flex', flexDirection: 'column',
               background: 'var(--cth-cream-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
-            }}>
+            }} onDragOver={(e) => e.preventDefault()} onDrop={onLinearDrop}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px 4px',
                 background: col.accent, boxShadow: 'inset 0 -1px 0 var(--cth-ink-900)',
@@ -231,6 +241,8 @@ function TaskCard({ task, accent, assigneeName, onOpen, onDismiss }: {
   return (
     <div style={{ position: 'relative', display: 'flex' }}>
       <button
+        draggable
+        onDragStart={(e) => { e.dataTransfer.setData('application/x-linear-ticket', `LINEAR:${task.title}${task.description ? `\n${task.description}` : ''}`); e.dataTransfer.effectAllowed = 'copy'; }}
         onClick={onOpen}
         title="open task details"
         style={{

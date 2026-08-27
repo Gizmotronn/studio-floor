@@ -94,6 +94,11 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
+    const ticket = e.dataTransfer?.getData('application/x-linear-ticket') || e.dataTransfer?.getData('text/plain');
+    if (ticket && ticket.startsWith('LINEAR:')) {
+      setText(text ? `${text}\n\n${ticket.slice(7)}` : ticket.slice(7));
+      return;
+    }
     const dropped = Array.from(e.dataTransfer?.files ?? []);
     if (!dropped.length) return;
     const atts = dropped
