@@ -197,13 +197,17 @@ function sheetCellTexture(
 
 async function customSheetFrames(sheet: CustomWalkSheet): Promise<Texture[][]> {
   const image = await loadImage(sheet.url);
-  const row = (rowIndex: number): Texture[] => {
-    const stand = sheetCellTexture(image, 0, rowIndex, sheet.removeLightCheckerboard);
-    const stepL = sheetCellTexture(image, 1, rowIndex, sheet.removeLightCheckerboard);
-    const stepR = sheetCellTexture(image, 2, rowIndex, sheet.removeLightCheckerboard);
+  // Sheets are laid out as columns = direction (front, side, back) and rows =
+  // animation phase (stand, step-left, step-right). The old mapping treated
+  // rows as directions, making avatars visibly toggle front/side/front while
+  // walking. Build one stable direction row from each column instead.
+  const direction = (col: number): Texture[] => {
+    const stand = sheetCellTexture(image, col, 0, sheet.removeLightCheckerboard);
+    const stepL = sheetCellTexture(image, col, 1, sheet.removeLightCheckerboard);
+    const stepR = sheetCellTexture(image, col, 2, sheet.removeLightCheckerboard);
     return [stand, stepL, stepR, stand, stand, stand, stand];
   };
-  return [row(0), row(1), row(2)];
+  return [direction(0), direction(2), direction(1)];
 }
 
 /**

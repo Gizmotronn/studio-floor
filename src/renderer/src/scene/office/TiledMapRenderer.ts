@@ -77,6 +77,7 @@ export class TiledMapRenderer {
     this.parseSpawnPoints();
     this.markWalkableSpawnPoints();
     this.parseZones();
+    this.sealBedroom();
     this.buildTileLayers();
   }
 
@@ -100,6 +101,21 @@ export class TiledMapRenderer {
   getAllSpawnPoints(): Map<string, Point> { return this.spawnPoints; }
   getZone(name: string): ZoneRect | undefined { return this.zones.get(name); }
   getAllZones(): Map<string, ZoneRect> { return this.zones; }
+
+  /** The room beside the boardroom is Liam's private bedroom. Keep its
+   * perimeter closed in the pathfinding grid so colleagues cannot wander in
+   * through the old open-plan doorway. */
+  private sealBedroom(): void {
+    const left = 18, right = 25, top = 2, bottom = 9;
+    for (let x = left; x <= right; x++) {
+      if (top >= 0 && top < this.height) this.walkabilityGrid[top][x] = false;
+      if (bottom >= 0 && bottom < this.height) this.walkabilityGrid[bottom][x] = false;
+    }
+    for (let y = top; y <= bottom; y++) {
+      if (left >= 0 && left < this.width) this.walkabilityGrid[y][left] = false;
+      if (right >= 0 && right < this.width) this.walkabilityGrid[y][right] = false;
+    }
+  }
 
   /** The (flip-stripped) gid painted at a tile of a layer, 0 when empty.
    *  Lets the scene locate furniture by art — e.g. each desk's monitor block. */

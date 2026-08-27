@@ -519,7 +519,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
         zIndex: 500
       }}
     >
-      <div onClick={(e) => e.stopPropagation()} style={{ width: 940, maxWidth: '95vw' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(940px, 95vw)', maxWidth: '95vw', maxHeight: '92vh', boxSizing: 'border-box' }}>
         <PixelPanel
           variant="dialog"
           title="ADD AGENT"
@@ -633,10 +633,10 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
             )}
 
             {/* sidebar index + the active section's fields */}
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
               {/* LEFT — section index. Capabilities isn't a nav item: it isn't a
                   user field, it rides the imported hire manifest (banner above). */}
-              <nav style={{ width: 168, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <nav style={{ width: 168, flex: '0 1 168px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {SECTIONS.map((s, i) => {
                   const active = section === s.key;
                   return (
@@ -669,7 +669,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
               </nav>
 
               {/* RIGHT — the active section's fields */}
-              <div style={{ flex: 1, minWidth: 0, minHeight: 260, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ flex: '1 1 560px', minWidth: 0, minHeight: 260, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {section === 'identity' && (
                   <>
                     <Row label="Name">

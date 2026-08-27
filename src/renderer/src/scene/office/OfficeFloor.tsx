@@ -402,7 +402,7 @@ export function OfficeFloor() {
         for (const ch of agent.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
         return boardroomIdleTiles[hash % boardroomIdleTiles.length];
       };
-      const liamPublicDesk = mapRenderer.getSpawnPoint('pc-1') ?? { x: 2, y: 13 };
+      const liamPublicDesk = mapRenderer.getSpawnPoint('pc-2') ?? { x: 6, y: 13 };
       let liamPublicCooldown = 55;
       // The bottom-right open area is the cafeteria (break room) — see the
       // coffee-break director below. It is deliberately NOT added as overflow
@@ -427,20 +427,22 @@ export function OfficeFloor() {
       }
       if (waitTiles.length === 0) waitTiles.push(entrance);
 
-      // Seat 0 is desk-ceo — "Michael's room" — reserved for the god agent.
-      // All other workers claim seats from 1 onward.
-      const GOD_SEAT = 0;
+      // Stable named seating: the first open-plan desks are Carla, Liam, Nick,
+      // Bjorn, Mike, and Andrew. Rob and Claudia continue along the lower row.
+      // This is identity-based rather than spawn-order-based, so restoring the
+      // hive or adding a new agent cannot reshuffle anyone's desk.
+      const NAMED_SEATS: Record<string, string> = {
+        Carla: 'pc-1', Liam: 'pc-2', Nick: 'pc-3', Bjorn: 'pc-4',
+        Mike: 'pc-5', Andrew: 'pc-6', Rob: 'desk-team-lead', Claudia: 'desk-backend-engineer',
+      };
       const preferredSeatFor = (agent: Agent): number | undefined => {
-        if (agent.isGod) return GOD_SEAT;
-        const preferredName = agent.name === 'Carla' ? 'pc-2'
-          : agent.name === 'Claudia' ? 'pc-3' : undefined;
+        const preferredName = NAMED_SEATS[agent.isGod ? 'Liam' : agent.name];
         if (!preferredName) return undefined;
         const tile = mapRenderer.getSpawnPoint(preferredName);
         if (!tile) return undefined;
         return seatTiles.findIndex((s) => s.x === tile.x && s.y === tile.y);
       };
       const claimSeat = (agent: Agent): number | null => {
-        if (agent.isGod) { seatClaims.add(GOD_SEAT); return GOD_SEAT; }
         const preferred = preferredSeatFor(agent);
         if (preferred !== undefined && preferred > 0 && !seatClaims.has(preferred)) {
           seatClaims.add(preferred);
@@ -1166,19 +1168,18 @@ export function OfficeFloor() {
           }
         };
 
-        // Open-plan row: Liam → Carla → Claudia, with deliberately different
+        // Open-plan row: Carla → Liam → Nick, with deliberately different
         // tools on each desk. These are also visible when an agent is away.
         const openY = 10 * ts + 5;
-        laptop(2 * ts + 4, openY);
-        sketchpad(2 * ts + 21, openY + 1);
-        laptop(6 * ts + 2, openY + 2);
-        studioDisplay(6 * ts + 18, openY - 2);
         // Carla's small bicycle sculpture.
-        personalPropsG.circle(6 * ts + 44, openY + 10, 4).stroke({ color: 0xd58a58, width: 1.5 });
-        personalPropsG.circle(6 * ts + 54, openY + 10, 4).stroke({ color: 0xd58a58, width: 1.5 });
-        personalPropsG.moveTo(6 * ts + 44, openY + 10).lineTo(6 * ts + 49, openY + 3).lineTo(6 * ts + 54, openY + 10);
-        personalPropsG.moveTo(6 * ts + 49, openY + 3).lineTo(6 * ts + 53, openY + 3);
-        studioDisplay(10 * ts + 18, openY - 2);
+        laptop(2 * ts + 2, openY + 2);
+        studioDisplay(2 * ts + 18, openY - 2);
+        personalPropsG.circle(2 * ts + 44, openY + 10, 4).stroke({ color: 0xd58a58, width: 1.5 });
+        personalPropsG.circle(2 * ts + 54, openY + 10, 4).stroke({ color: 0xd58a58, width: 1.5 });
+        personalPropsG.moveTo(2 * ts + 44, openY + 10).lineTo(2 * ts + 49, openY + 3).lineTo(2 * ts + 54, openY + 10);
+        personalPropsG.moveTo(2 * ts + 49, openY + 3).lineTo(2 * ts + 53, openY + 3);
+        laptop(6 * ts + 4, openY);
+        sketchpad(6 * ts + 21, openY + 1);
 
         // Liam's private office: dual monitors, a living paperwork stack, and
         // the tiny wind-up hedgehog that scurries when the desk is clear.
@@ -1195,10 +1196,12 @@ export function OfficeFloor() {
         // small bedroom: bed, pillow, lamp, and a muted rug define it without
         // sealing the walkable floor.
         const bx = 19 * ts, by = 3 * ts;
-        // Close the former doorway with a solid wall panel. The bedroom remains
-        // a visual nook, but it no longer reads as an open passage from the floor.
-        personalPropsG.rect(bx - ts, by, ts + 2, 4 * ts).fill(0x30283a);
-        personalPropsG.rect(bx - ts + 2, by + 2, ts - 2, 4 * ts - 4).fill(0x839a8f);
+        // Close the former doorway with a complete wall perimeter. The bedroom
+        // is private now: it no longer reads as an open passage from the floor.
+        personalPropsG.rect(bx - ts, by, 8 * ts, 2).fill(0x30283a);
+        personalPropsG.rect(bx - ts, by + 7 * ts, 8 * ts, 2).fill(0x30283a);
+        personalPropsG.rect(bx - ts, by, 2, 7 * ts).fill(0x30283a);
+        personalPropsG.rect(bx + 7 * ts - 2, by, 2, 7 * ts).fill(0x30283a);
         // Bed: headboard, mattress, folded blanket, pillow, and two visible legs.
         personalPropsG.rect(bx + 3, by + 9, 44, 30).fill(0x4d3b4b).stroke({ color: 0x30283a, width: 2 });
         personalPropsG.rect(bx + 7, by + 14, 36, 20).fill(0xd8c0a4);
