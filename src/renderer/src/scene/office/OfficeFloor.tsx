@@ -3,6 +3,7 @@ import { Application, Container, Graphics, Ticker, Texture } from 'pixi.js';
 // PixiJS uses new Function() internally, blocked by Electron CSP — this patches it.
 import 'pixi.js/unsafe-eval';
 import { useStore, type Agent } from '@/store/store';
+import { BoardMeetingModal } from '@/components/BoardMeetingModal';
 import { TiledMapRenderer } from './TiledMapRenderer';
 import { Camera } from './Camera';
 import { Character, paintCup } from './Character';
@@ -206,6 +207,8 @@ export function OfficeFloor() {
   // The active office theme (store mirror of config.officeTheme). Changing it
   // tears down and rebuilds the whole scene on the new map/cast (see deps below).
   const officeTheme = useStore((s) => s.officeTheme);
+  const boardMeeting = useStore((s) => s.boardMeeting);
+  const [boardMeetingOpen, setBoardMeetingOpen] = useState(false);
 
   // Is the floor actually on screen? A fullscreen terminal or file editor covers
   // it completely, and a hidden window shows nothing at all — but the Pixi ticker
@@ -407,10 +410,48 @@ export function OfficeFloor() {
       let liamPublicCooldown = 55;
       const bedroomHangout = { x: 21, y: 5 };
       let boardroomSocialClock = 6;
+      let boardMeetingWasActive = false;
+      const boardroomDoor = { x: 13, y: 8 };
       const isExecutive = (agent: Agent): boolean => {
         const text = `${agent.name} ${agent.description}`.toLowerCase();
         return agent.name !== 'Carla' && agent.name !== 'Claudia'
           && /ceo|executive|advisor|research|scientist/.test(text);
+      };
+
+      // Explicit board meetings temporarily take over the social director:
+      // attendees are routed to the boardroom and the corridor tile is closed
+      // until the user ends the meeting.
+      const updateBoardMeeting = (): void => {
+        const meeting = useStore.getState().boardMeeting;
+        const active = !!meeting?.active;
+        mapRenderer.setWalkable(boardroomDoor.x, boardroomDoor.y, !active);
+        if (!active) {
+          if (boardMeetingWasActive) {
+            for (const rt of runtimes.values()) {
+              if (rt.socialRoom === 'boardroom') { rt.socialRoom = undefined; rt.character.startWandering(); }
+            }
+          }
+          boardMeetingWasActive = false;
+          return;
+        }
+        boardMeetingWasActive = true;
+        const ids = new Set(meeting.participantIds);
+        meeting.participantIds.forEach((id, index) => {
+          const agent = useStore.getState().agents.find((a) => a.id === id);
+          const rt = agent ? runtimes.get(agent.id) : undefined;
+          if (!agent || !rt || (agent.status !== 'idle' && agent.status !== 'success') || rt.brk || rt.err || rt.run) return;
+          const alreadyThere = rt.socialRoom === 'boardroom';
+          rt.socialRoom = 'boardroom';
+          const target = boardroomIdleTiles[index % Math.max(1, boardroomIdleTiles.length)];
+          if (target && !alreadyThere) rt.character.walkToAndThen(target, () => rt.character.sitInPlace('up'));
+          rt.character.showThought('in the board meeting');
+        });
+        for (const agent of useStore.getState().agents) {
+          if (isExecutive(agent) && !ids.has(agent.id)) {
+            const rt = runtimes.get(agent.id);
+            if (rt?.socialRoom === 'boardroom') { rt.socialRoom = undefined; rt.character.startWandering(); }
+          }
+        }
       };
       // The bottom-right open area is the cafeteria (break room) — see the
       // coffee-break director below. It is deliberately NOT added as overflow
@@ -1143,6 +1184,7 @@ export function OfficeFloor() {
       // precedence there, so Carla steps out rather than competing for it.
       // After 19:00 the pair retreat to the bedroom instead.
       const updateSocialRooms = (dt: number): void => {
+        if (useStore.getState().boardMeeting?.active) return;
         const now = new Date();
         const evening = now.getHours() >= 19;
         const agents = useStore.getState().agents;
@@ -1993,6 +2035,7 @@ export function OfficeFloor() {
         updateCafeteria(dt);
         updateCarlaVisit(dt);
         updateLiamPublicDesk(dt);
+        updateBoardMeeting();
         updateSocialRooms(dt);
         for (const rt of runtimes.values()) {
           if (!rt.visitingBoss || rt.visitTimer === undefined) continue;
@@ -2062,16 +2105,14 @@ export function OfficeFloor() {
   }, [officeTheme, glGeneration]);
 
   return (
-    <div
-      ref={hostRef}
-      style={{
-        width: '100%', height: '100%',
-        boxShadow: 'var(--cth-panel-border)',
-        overflow: 'hidden',
-        imageRendering: 'pixelated',
-        background: hex(colors.ink[900]),
-      }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={hostRef} style={{ width: '100%', height: '100%', boxShadow: 'var(--cth-panel-border)', overflow: 'hidden', imageRendering: 'pixelated', background: hex(colors.ink[900]) }} />
+      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+        {boardMeeting?.active && <span style={{ padding: '7px 10px', background: 'rgba(35,55,48,.92)', color: '#d8f4e2', fontFamily: 'var(--cth-font-display)', fontSize: 10 }}>BOARDROOM LOCKED</span>}
+        <button type="button" onClick={() => setBoardMeetingOpen(true)} style={{ padding: '9px 12px', border: '2px solid var(--cth-ink-900)', background: boardMeeting?.active ? 'var(--cth-mint)' : 'var(--cth-paper-100)', color: 'var(--cth-ink-900)', fontFamily: 'var(--cth-font-display)', fontSize: 10, cursor: 'pointer', boxShadow: '3px 3px 0 rgba(0,0,0,.22)' }}>{boardMeeting?.active ? 'OPEN BOARD CHAT' : 'CALL BOARD MEETING'}</button>
+      </div>
+      {boardMeetingOpen && <BoardMeetingModal onClose={() => setBoardMeetingOpen(false)} />}
+    </div>
   );
 }
 

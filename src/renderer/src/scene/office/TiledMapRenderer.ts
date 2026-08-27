@@ -89,6 +89,12 @@ export class TiledMapRenderer {
     return this.walkabilityGrid[ty][tx];
   }
 
+  /** Toggle a controlled doorway without rebuilding the map. */
+  setWalkable(tx: number, ty: number, walkable: boolean): void {
+    if (tx < 0 || ty < 0 || tx >= this.width || ty >= this.height) return;
+    this.walkabilityGrid[ty][tx] = walkable;
+  }
+
   tileToPixel(tx: number, ty: number): Point {
     return { x: tx * this.tileSize, y: ty * this.tileSize };
   }

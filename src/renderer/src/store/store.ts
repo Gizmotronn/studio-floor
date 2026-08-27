@@ -113,6 +113,12 @@ export interface Agent {
   seedPrompt?: string;
 }
 
+export interface BoardMeeting {
+  active: boolean;
+  participantIds: string[];
+  startedAt: number;
+}
+
 export interface FeedEntry {
   agentId: string;
   text: string;
@@ -276,6 +282,9 @@ interface State {
    *  on switch). OfficeFloor depends on this and rebuilds the scene on change. */
   officeTheme: ThemeId;
   setOfficeTheme: (theme: ThemeId) => void;
+  boardMeeting: BoardMeeting | null;
+  startBoardMeeting: (participantIds: string[]) => void;
+  endBoardMeeting: () => void;
   /** Mirror of config.webhookTriggers — the inbound HTTP endpoints. Webhooks are
    *  editable from BOTH Settings → Connections and the Triggers tab, so neither
    *  surface keeps its own copy: both render off this list and both call the
@@ -863,6 +872,9 @@ export const useStore = create<State>((set, get) => ({
   setHasOpenAiKey: (has) => set({ hasOpenAiKey: has }),
   officeTheme: 'office',
   setOfficeTheme: (theme) => set({ officeTheme: theme }),
+  boardMeeting: null,
+  startBoardMeeting: (participantIds) => set({ boardMeeting: { active: true, participantIds, startedAt: Date.now() } }),
+  endBoardMeeting: () => set({ boardMeeting: null }),
   webhookTriggers: [],
   setWebhookTriggers: (list) => set({ webhookTriggers: list }),
   // A copy, not the shared DEFAULT_ORG_TRIGGER instance — main takes the same
