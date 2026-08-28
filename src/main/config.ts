@@ -366,6 +366,18 @@ export interface HarnessConfig {
    *  tunes this in Settings → Realtime Michael. */
   realtimeIdleDisconnectMs?: number;
 
+  // ─── Carla voice (local Chatterbox renderer, via Morning) ───────────────────
+  /** Master toggle: when on, the main process watches the fleet snapshot for
+   *  Carla activity and proactively warms Morning's local voice server (model
+   *  load + reference-conditioning is ~15-20s cold, so this hides that latency
+   *  behind her actual working time instead of the first `carla:speak` call).
+   *  Default on — mirrors `freeflowEnabled`. */
+  carlaVoiceEnabled?: boolean;
+  /** Absolute path to the Morning repo checkout that hosts the local voice
+   *  server (`scripts/local_voice/start_server.sh`) and Carla's reference wav.
+   *  Default `~/Documents/NotOnce/Morning`. */
+  morningVoiceRoot?: string;
+
   // ─── Generic inbound webhook + status API (LEGACY, single-endpoint) ─────────
   // Superseded by `webhookTriggers`, which allows many endpoints over one server
   // and one tunnel. These three are kept because they are the MIGRATION SOURCE
@@ -459,6 +471,8 @@ const DEFAULTS: HarnessConfig = {
   freeflowModel: 'whisper-large-v3-turbo',
   realtimeVoiceEnabled: false,
   realtimeIdleDisconnectMs: 180_000,
+  carlaVoiceEnabled: true,
+  morningVoiceRoot: undefined,
   webhookEnabled: false,
   webhookSecret: undefined,
   webhookPort: undefined,

@@ -45,6 +45,13 @@ interface HookPayload {
   cache_creation?: number;
 }
 
+export type HookEventObserver = (
+  agentId: string | undefined,
+  event: string,
+  transcriptPath: string | undefined,
+  sessionId: string | undefined
+) => void;
+
 export class HookServer {
   private server: Server | null = null;
   /** agentId → the live session's transcript file, learned from hook payloads.
@@ -74,7 +81,10 @@ export class HookServer {
     /** Optional observer of every hook boundary (agentId, event, message). The
      *  worker inbox-wake watchdog (workerWake.ts) feeds on this to learn when an
      *  agent is parked on a permission/HITL prompt so it never types into it. */
-    private onEvent?: (agentId: string | undefined, event: string, message: string | undefined) => void
+    private onEvent?: (agentId: string | undefined, event: string, message: string | undefined) => void,
+    /** Optional observer for completed agent turns. Runs after the transcript
+     *  path has been retained, so consumers can read the finished response. */
+    private onTurnComplete?: HookEventObserver
   ) {}
 
   start(): void {
@@ -125,6 +135,9 @@ export class HookServer {
     this.onEvent?.(agentId, event, p.message);
     if (agentId && typeof p.transcript_path === 'string' && p.transcript_path) {
       this.transcriptPaths.set(agentId, p.transcript_path);
+    }
+    if ((event === 'Stop' || event === 'SubagentStop') && agentId) {
+      this.onTurnComplete?.(agentId, event, p.transcript_path || this.transcriptPaths.get(agentId), p.session_id);
     }
 
     // Status-line payloads carry the session's EXACT context accounting —

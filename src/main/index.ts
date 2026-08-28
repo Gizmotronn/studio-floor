@@ -25,7 +25,8 @@ import {
   getLogGraph, getCommitFiles, getFileAtRev, compareRefs, listWorktrees, checkoutRef
 } from './git';
 import { HiveManager, type AgentMeta, type HiveMessage, type HiveTask } from './hive';
-import { HookServer } from './hooks';
+import { ensureCarlaVoiceWarm, stopCarlaVoiceServerIfOwned, queueSpeech, readLatestAssistantResponse } from './carlaVoice';
+import { HookServer, type HookEventObserver } from './hooks';
 import { CircuitBreaker, type BreakerInput } from './breaker';
 import type { UsageProvider } from './usage';
 import { MemoryManager } from './memory';
@@ -290,6 +291,46 @@ function standingGoalFromRoster(agentId: string): string | null {
 // background window can't leave a worker parked on an unread inbox forever).
 // HookServer feeds it the hook stream so a permission/HITL prompt blocks nudges.
 const workerWake = new WorkerWakeWatchdog();
+const spokenCarlaResponses = new Set<string>();
+
+/** Carla's Claude hook does not carry the assistant text itself; it does carry
+ *  the completed session transcript path. Read the newest assistant record at
+ *  Stop, then send that exact text through Morning's cloned voice and speaker.
+ *  The transcript UUID makes duplicate Stop/SubagentStop deliveries harmless
+ *  while still allowing identical wording in later turns to be spoken again. */
+const speakCompletedCarlaTurn: HookEventObserver = (agentId, event, transcriptPath, sessionId) => {
+  if (!agentId || (event !== 'Stop' && event !== 'SubagentStop') || !transcriptPath) return;
+  try {
+    const registryAgent = hive.registry().agents[agentId];
+    if (!registryAgent || registryAgent.name !== 'Carla' || registryAgent.archived) return;
+    const cfg = readConfig();
+    if (cfg.carlaVoiceEnabled === false) return;
+    const response = readLatestAssistantResponse(transcriptPath);
+    if (!response?.text) return;
+    const responseKey = `${agentId}:${sessionId ?? ''}:${response.key}`;
+    if (spokenCarlaResponses.has(responseKey)) return;
+    spokenCarlaResponses.add(responseKey);
+
+    const hiveRoot = hive.root();
+    const outDir = hiveRoot ? join(hiveRoot, 'voice', 'carla') : join(app.getPath('temp'), 'carla-voice');
+    mkdirSync(outDir, { recursive: true });
+    const outputPath = join(outDir, `${Date.now()}-${randomBytes(4).toString('hex')}.wav`);
+    void queueSpeech(response.text, outputPath, cfg.morningVoiceRoot || undefined).then((result) => {
+      if (!result.ok) {
+        // Allow a later genuine Stop for the same record to retry after a
+        // transient server/player failure, without duplicate playback while
+        // the original request is still in flight.
+        spokenCarlaResponses.delete(responseKey);
+        console.warn('[carla-voice] response playback failed:', result.error);
+      }
+    }).catch((err) => {
+      spokenCarlaResponses.delete(responseKey);
+      console.warn('[carla-voice] response playback failed:', err instanceof Error ? err.message : String(err));
+    });
+  } catch (err) {
+    console.warn('[carla-voice] could not queue completed response:', err instanceof Error ? err.message : String(err));
+  }
+};
 // HookServer needs BOTH: Oscar's control registry (HITL pause/gate/steer/halt via
 // hook returns) AND Jim's breaker (feed recordToolUse on each PostToolUse).
 const hookServer = new HookServer(
@@ -299,7 +340,8 @@ const hookServer = new HookServer(
   control,
   breaker,
   standingGoalFromRoster,
-  (agentId, event, message) => workerWake.noteHook(agentId, event, message)
+  (agentId, event, message) => workerWake.noteHook(agentId, event, message),
+  speakCompletedCarlaTurn
 );
 const memory = new MemoryManager(
   () => readConfig().harnessHome,
@@ -1232,6 +1274,20 @@ function writeFleetSnapshot(): void {
         };
       });
     hive.writeFleetSnapshot({ ts: now, agents });
+
+    // Carla voice pre-warm: registry ids are per-spawn (`carla-<rand>`), so match
+    // on name. "Active" here means she had tool activity within the last beat or
+    // two (lastActiveSecAgo is null until her first tool call) — cheap enough to
+    // check every ~8s beat, and ensureCarlaVoiceWarm() self-debounces internally.
+    if (readConfig().carlaVoiceEnabled !== false) {
+      const carlaActive = agents.some(
+        (a) => a.name === 'Carla' && a.lastActiveSecAgo !== null && a.lastActiveSecAgo <= 30
+      );
+      if (carlaActive) {
+        const root = readConfig().morningVoiceRoot;
+        void ensureCarlaVoiceWarm(root || undefined);
+      }
+    }
   } catch (e) {
     console.error('[fleet] snapshot failed:', e);
   }
@@ -3358,6 +3414,19 @@ ipcMain.handle('hive:send', (_evt, partial: Partial<HiveMessage>, from: unknown)
   const msg = hive.send(partial ?? {}, typeof from === 'string' ? from : 'system');
   return { ok: true, message: msg };
 });
+// Carla voice: render one line through Morning's local Chatterbox server. The
+// fleet beat (writeFleetSnapshot) keeps the server warm while she's active, so
+// this call is usually just the ~1x-realtime synthesis, not a ~20s cold start.
+ipcMain.handle('carla:speak', async (_evt, text: unknown) => {
+  if (typeof text !== 'string' || !text.trim()) return { ok: false, error: 'empty text' };
+  const cfg = readConfig();
+  if (cfg.carlaVoiceEnabled === false) return { ok: false, error: 'Carla voice is disabled in Settings' };
+  const hiveRoot = hive.root();
+  const outDir = hiveRoot ? join(hiveRoot, 'voice', 'carla') : join(app.getPath('temp'), 'carla-voice');
+  try { mkdirSync(outDir, { recursive: true }); } catch { /* noop */ }
+  const outputPath = join(outDir, `${Date.now()}.wav`);
+  return queueSpeech(text, outputPath, cfg.morningVoiceRoot || undefined);
+});
 ipcMain.handle('hive:addTask', (_evt, task: unknown) => {
   if (!task || typeof task !== 'object' || Array.isArray(task)
     || typeof (task as { id?: unknown }).id !== 'string') {
@@ -3630,6 +3699,7 @@ function teardownAndQuit(): void {
   try { reflector.stop(); } catch (e) { console.error('[quit] reflector.stop:', e); }
   try { persist.close(); } catch (e) { console.error('[quit] persist.close:', e); }
   try { hive.stopAllProxyBridges(); } catch (e) { console.error('[quit] stopAllProxyBridges:', e); }
+  try { stopCarlaVoiceServerIfOwned(); } catch (e) { console.error('[quit] carlaVoice.stop:', e); }
   try { ptyManager.killAll(); } catch (e) { console.error('[quit] killAll:', e); }
   app.quit();
 }

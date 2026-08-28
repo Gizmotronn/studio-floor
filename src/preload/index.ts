@@ -845,6 +845,8 @@ const api = {
     ipcRenderer.invoke('history:search', query, limit),
   hiveSend: (msg: Partial<HiveMessage>, from?: string): Promise<{ ok: boolean; error?: string; message?: HiveMessage }> =>
     ipcRenderer.invoke('hive:send', msg, from),
+  carlaSpeak: (text: string): Promise<{ ok: boolean; outputPath?: string; error?: string }> =>
+    ipcRenderer.invoke('carla:speak', text),
 
   onHiveHookEvent: (
     cb: (e: { agentId?: string; event: string; tool?: string; notificationType?: string; source?: string; message?: string; blocked?: boolean }) => void
