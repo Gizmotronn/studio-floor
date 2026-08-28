@@ -34,6 +34,13 @@ import brandLogo from '@/assets/studio-icon.png?url';
 // Injected at build time from package.json (see electron.vite.config.ts).
 declare const __APP_VERSION__: string;
 
+function BoardWindowShell() {
+  return <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--cth-paper-200)', position: 'relative' }}>
+    <button type="button" onClick={() => window.close()} aria-label="Close Kanban window" title="Close Kanban window" style={{ position: 'absolute', top: 10, right: 12, zIndex: 20, width: 30, height: 30, border: '2px solid var(--cth-ink-900)', background: 'var(--cth-paper-100)', color: 'var(--cth-ink-900)', fontSize: 18, lineHeight: 1, cursor: 'pointer', boxShadow: '2px 2px 0 rgba(0,0,0,.2)' }}>×</button>
+    <TasksKanban />
+  </div>;
+}
+
 export function App() {
   const boardWindow = new URLSearchParams(window.location.search).get('view') === 'board';
   const agent = useStore(selectedAgent);
@@ -242,12 +249,12 @@ export function App() {
   }, []);
 
   if (!config) {
-    if (boardWindow) return <TasksKanban />;
+    if (boardWindow) return <BoardWindowShell />;
     return <div style={{ width: '100vw', height: '100vh', background: 'var(--cth-cream-100)' }} />;
   }
 
   if (boardWindow) {
-    return <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--cth-paper-200)' }}><TasksKanban /></div>;
+    return <BoardWindowShell />;
   }
 
   if (!config.onboardingComplete) {
