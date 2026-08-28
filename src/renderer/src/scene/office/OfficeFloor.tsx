@@ -159,7 +159,12 @@ const SOCIAL_VOICES: Record<string, { lang: string; rate: number; pitch: number 
   claudia: { lang: 'en-GB', rate: 1.08, pitch: 1.12 },
 };
 
-function speakFloorLine(character: string, text: string): void {
+function speakFloorLine(_character: string, _text: string): void {
+  // Agent floor speech is intentionally disabled until the custom voice
+  // renderer is integrated. Keep the call sites so that renderer can replace
+  // this single gate without reworking room choreography.
+  return;
+  /*
   if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text.trim()) return;
   const profile = SOCIAL_VOICES[character] ?? SOCIAL_VOICES.engineer;
   const utterance = new SpeechSynthesisUtterance(text.replace(/[📌☕🌿🚀✔😤🥺💪]/gu, '').trim());
@@ -173,7 +178,7 @@ function speakFloorLine(character: string, text: string): void {
   // Keep floor chatter lightweight: an existing line finishes naturally, but
   // a backlog never grows beyond one queued utterance per social beat.
   if (window.speechSynthesis.speaking) return;
-  window.speechSynthesis.speak(utterance);
+  window.speechSynthesis.speak(utterance); */
 }
 
 /** What the agent is doing right now, for the thought cloud. Prefer the live
@@ -210,6 +215,9 @@ export function OfficeFloor() {
   const officeTheme = useStore((s) => s.officeTheme);
   const boardMeeting = useStore((s) => s.boardMeeting);
   const [boardMeetingOpen, setBoardMeetingOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+  }, []);
   const personalMode = useStore((s) => s.personalMode);
   const setPersonalMode = useStore((s) => s.setPersonalMode);
   const endBoardMeeting = useStore((s) => s.endBoardMeeting);
